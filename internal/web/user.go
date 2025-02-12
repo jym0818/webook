@@ -3,6 +3,8 @@ package web
 import (
 	regexp "github.com/dlclark/regexp2"
 	"github.com/gin-gonic/gin"
+	"github.com/jym/webook/internal/domain"
+	"github.com/jym/webook/internal/service"
 	"net/http"
 )
 
@@ -12,12 +14,14 @@ const passwordRegexPattern = `^(?=.*[A-Za-z])(?=.*\d)(?=.*[$@$!%*#?&])[A-Za-z\d$
 
 // UserHandler 表示与user相关的路由处理
 type UserHandler struct {
+	svc         *service.UserService
 	emailExp    *regexp.Regexp
 	passwordExp *regexp.Regexp
 }
 
-func NewUserHandler() *UserHandler {
+func NewUserHandler(svc *service.UserService) *UserHandler {
 	return &UserHandler{
+		svc:         svc,
 		emailExp:    regexp.MustCompile(emailRegexPattern, regexp.None),
 		passwordExp: regexp.MustCompile(passwordRegexPattern, regexp.None),
 	}
@@ -71,6 +75,18 @@ func (u *UserHandler) Signup(c *gin.Context) {
 		c.JSON(http.StatusOK, "两次密码不同")
 		return
 	}
+
+	//调用svc的方法 下一层service层
+	err = u.svc.SignUp(c, domain.User{
+		Email:    req.Email,
+		Password: req.Password,
+	})
+	if err != nil {
+		//记录日志，而不是返回具体错误给前端
+		c.JSON(http.StatusOK, "系统错误")
+		return
+	}
+
 	c.JSON(http.StatusOK, "注册成功")
 }
 func (u *UserHandler) Login(c *gin.Context) {
