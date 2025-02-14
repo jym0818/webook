@@ -14,27 +14,18 @@ import (
 )
 
 func main() {
+	//初始化db和建表
+	db := initDB()
+	//初始化web
+	s := initWebServer()
+	//初始化路由
+	u := initUser(db)
+	//路由注册
+	u.RegisterRouters(s)
+	s.Run(":8080")
+}
 
-	//也就是说我们都是通过New函数创建结构体，而不是手动创建一个结构体  使用依赖注入
-
-	db, err := gorm.Open(mysql.Open("root:root@tcp(127.0.0.1:13316)/webook?charset=utf8mb4&parseTime=True&loc=Local"), &gorm.Config{})
-	if err != nil {
-		//我只会在初始化过程中panic
-		//一旦panic goroutine就会结束
-		//一旦初始化过程出错，应用就不要启动了，所以panic
-		panic(err)
-	}
-	userDao := dao.NewUserDAO(db)               //需要db
-	repo := repository.NewUserReposity(userDao) //需要dao，上一层
-	svc := service.NewUserService(repo)         //需要repo，上一层
-	u := web.NewUserHandler(svc)                //需要service才能初始化handler，上一层
-
-	//初始化建表---------实际工作中不会使用这种方法
-	err = dao.InitTable(db)
-	if err != nil {
-		panic(err)
-	}
-
+func initWebServer() *gin.Engine {
 	s := gin.Default()
 	// 使用 CORS 中间件处理跨域问题，配置 CORS 参数
 	s.Use(cors.New(cors.Config{
@@ -61,7 +52,30 @@ func main() {
 		// 用于缓存预检请求结果的最大时间（CORS中的Access-Control-Max-Age）
 		MaxAge: 12 * time.Hour,
 	}))
+	return s
+}
 
-	u.RegisterRouters(s)
-	s.Run(":8080")
+func initUser(db *gorm.DB) *web.UserHandler {
+	//也就是说我们都是通过New函数创建结构体，而不是手动创建一个结构体  使用依赖注入
+
+	userDao := dao.NewUserDAO(db)               //需要db
+	repo := repository.NewUserReposity(userDao) //需要dao，上一层
+	svc := service.NewUserService(repo)         //需要repo，上一层
+	u := web.NewUserHandler(svc)                //需要service才能初始化handler，上一层
+	return u
+}
+func initDB() *gorm.DB {
+	db, err := gorm.Open(mysql.Open("root:root@tcp(127.0.0.1:13316)/webook?charset=utf8mb4&parseTime=True&loc=Local"), &gorm.Config{})
+	if err != nil {
+		//我只会在初始化过程中panic
+		//一旦panic goroutine就会结束
+		//一旦初始化过程出错，应用就不要启动了，所以panic
+		panic(err)
+	}
+	//初始化建表---------实际工作中不会使用这种方法
+	err = dao.InitTable(db)
+	if err != nil {
+		panic(err)
+	}
+	return db
 }

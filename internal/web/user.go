@@ -81,6 +81,10 @@ func (u *UserHandler) Signup(c *gin.Context) {
 		Email:    req.Email,
 		Password: req.Password,
 	})
+	if err == service.ErrUserDuplicateEmail {
+		c.JSON(http.StatusOK, "重复邮箱，请换一个邮箱")
+		return
+	}
 	if err != nil {
 		//记录日志，而不是返回具体错误给前端
 		c.JSON(http.StatusOK, "系统错误")
