@@ -94,6 +94,28 @@ func (u *UserHandler) Signup(c *gin.Context) {
 	c.JSON(http.StatusOK, "注册成功")
 }
 func (u *UserHandler) Login(c *gin.Context) {
+	type LoginReq struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	var req LoginReq
+	if err := c.Bind(&req); err != nil {
+		//记录日志 而不是把具体的错误返回给前端
+		c.JSON(http.StatusOK, "系统错误")
+		return
+	}
+	err := u.svc.Login(c, req.Email, req.Password)
+	if err == service.ErrInvalidUserOrPassword {
+		c.JSON(http.StatusOK, "账号或者密码错误")
+		return
+	}
+	if err != nil {
+		//记录日志 而不是把具体的错误返回给前端
+		c.JSON(http.StatusOK, "系统错误")
+		return
+	}
+
+	c.JSON(http.StatusOK, "登录成功")
 
 }
 func (u *UserHandler) Edit(c *gin.Context) {

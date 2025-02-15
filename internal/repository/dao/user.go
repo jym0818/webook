@@ -11,6 +11,9 @@ import (
 // ErrUserDuplicateEmail 这个算是 user 专属的
 var ErrUserDuplicateEmail = errors.New("邮件冲突")
 
+// 继续一层一层暴露出去知道repository层，要在service层判断返回的err是不是这个错误
+var ErrUserNotFound = gorm.ErrRecordNotFound
+
 type UserDAO struct {
 	db *gorm.DB
 }
@@ -35,6 +38,13 @@ func (dao *UserDAO) Insert(ctx context.Context, u User) error {
 		}
 	}
 	return err
+}
+
+func (dao *UserDAO) FindByEmail(ctx context.Context, email string) (User, error) {
+	var u User
+	err := dao.db.WithContext(ctx).Where("email = ?", email).First(&u).Error
+	//无需检查错误，找不到会返回ErrRecordNotFound和空结构体
+	return u, err
 }
 
 // 直接对应数据库表结构 与domain中user不是对应关系，可能会不同
