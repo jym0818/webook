@@ -119,12 +119,32 @@ func (u *UserHandler) Login(c *gin.Context) {
 	//从c从获取值
 	sess := sessions.Default(c)
 	sess.Set("userId", user.Id)
+	sess.Options(sessions.Options{
+		MaxAge: 30,
+	})
 	err = sess.Save()
 	if err != nil {
 		c.JSON(http.StatusOK, "系统错误")
 		return
 	}
 	c.JSON(http.StatusOK, "登录成功")
+
+}
+
+func (u *UserHandler) Logout(c *gin.Context) {
+	//登录成功，保持登录逻辑
+	//从c从获取值
+	sess := sessions.Default(c)
+	sess.Get("userId")
+	sess.Options(sessions.Options{
+		MaxAge: -1,
+	})
+	err := sess.Save()
+	if err != nil {
+		c.JSON(http.StatusOK, "系统错误")
+		return
+	}
+	c.JSON(http.StatusOK, "退出成功")
 
 }
 func (u *UserHandler) Edit(c *gin.Context) {
