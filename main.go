@@ -2,11 +2,14 @@ package main
 
 import (
 	"github.com/gin-contrib/cors"
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/jym/webook/internal/repository"
 	"github.com/jym/webook/internal/repository/dao"
 	"github.com/jym/webook/internal/service"
 	"github.com/jym/webook/internal/web"
+	"github.com/jym/webook/internal/web/middleware"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"strings"
@@ -27,6 +30,7 @@ func main() {
 
 func initWebServer() *gin.Engine {
 	s := gin.Default()
+
 	// 使用 CORS 中间件处理跨域问题，配置 CORS 参数
 	s.Use(cors.New(cors.Config{
 		// 允许的源地址（CORS中的Access-Control-Allow-Origin）
@@ -52,6 +56,12 @@ func initWebServer() *gin.Engine {
 		// 用于缓存预检请求结果的最大时间（CORS中的Access-Control-Max-Age）
 		MaxAge: 12 * time.Hour,
 	}))
+
+	store := cookie.NewStore([]byte("secret"))
+	s.Use(sessions.Sessions("mysession", store))
+
+	s.Use(middleware.NewLoginMiddlewareBuilder().CheckLogin())
+
 	return s
 }
 

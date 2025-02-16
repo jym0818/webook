@@ -36,7 +36,7 @@ func (repo *UserRepository) FindByEmail(ctx context.Context, email string) (doma
 		//如果出错，返回空结构体
 		return domain.User{}, err
 	}
-	return domain.User{Email: u.Email, Password: u.Password}, nil
+	return domain.User{Id: u.Id, Email: u.Email, Password: u.Password}, nil
 
 }
 
