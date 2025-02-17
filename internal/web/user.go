@@ -126,7 +126,9 @@ func (u *UserHandler) LoginJWT(c *gin.Context) {
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute)),
 		},
-		Uid: user.Id}
+		Uid:       user.Id,
+		UserAgent: c.Request.UserAgent(),
+	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
 	tokenStr, err := token.SignedString([]byte("sDKU8mor4FhrCDsFmmMYifqYb8u2X4c7"))
 	if err != nil {
@@ -218,4 +220,5 @@ type UserClaims struct {
 	//声明你自己要放入token里面的数据
 	Uid int64
 	//自己随便加 但是最好不要加入敏感数据
+	UserAgent string
 }

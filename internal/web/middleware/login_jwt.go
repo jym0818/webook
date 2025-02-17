@@ -55,6 +55,16 @@ func (*LoginJWTMiddlewareBuilder) CheckLogin() gin.HandlerFunc {
 			c.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
+
+		if claims.UserAgent != c.Request.UserAgent() {
+
+			//严重安全问题,重新登录
+			//你是要加监控的
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+
+		}
+
 		//登录校验结束----------说明登录成功
 
 		//过了10s 刷新一次
