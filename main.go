@@ -10,6 +10,8 @@ import (
 	"github.com/jym/webook/internal/service"
 	"github.com/jym/webook/internal/web"
 	"github.com/jym/webook/internal/web/middleware"
+	"github.com/jym/webook/pkg/ginx/middleware/ratelimit"
+	rd "github.com/redis/go-redis/v9"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"strings"
@@ -30,6 +32,12 @@ func main() {
 
 func initWebServer() *gin.Engine {
 	s := gin.Default()
+	rdClient := rd.NewClient(&rd.Options{
+		Addr: "localhost:6379",
+	})
+	//限流middleware
+	//限流同一IP 1s 100次
+	s.Use(ratelimit.NewBuilder(rdClient, time.Second, 100).Build())
 
 	// 使用 CORS 中间件处理跨域问题，配置 CORS 参数
 	s.Use(cors.New(cors.Config{
@@ -56,6 +64,7 @@ func initWebServer() *gin.Engine {
 		// 用于缓存预检请求结果的最大时间（CORS中的Access-Control-Max-Age）
 		MaxAge: 12 * time.Hour,
 	}))
+
 	// 1. 创建一个基于memstore存的存储
 	store, err := redis.NewStore(16, "tcp", "localhost:6379", "",
 		[]byte("sDKU8mor4FhrCDsFmmMYifqYb8u2X4c7"), []byte("zP6Va4QtIFrAVbDFOzMQwKtXDfZFpM5i"))
