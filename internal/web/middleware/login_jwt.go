@@ -3,8 +3,10 @@ package middleware
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/jym/webook/internal/web"
 	"net/http"
 	"strings"
+	"time"
 )
 
 type LoginJWTMiddlewareBuilder struct{}
@@ -33,7 +35,8 @@ func (*LoginJWTMiddlewareBuilder) CheckLogin() gin.HandlerFunc {
 			return
 		}
 		tokenStr := sges[1]
-		t, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
+		claims := &web.UserClaims{}
+		t, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
 			return []byte("sDKU8mor4FhrCDsFmmMYifqYb8u2X4c7"), nil
 		})
 
@@ -43,13 +46,30 @@ func (*LoginJWTMiddlewareBuilder) CheckLogin() gin.HandlerFunc {
 			return
 		}
 
+		//if claims.ExpiresAt.Time.Before(time.Now()) {
+		//过期了
+		//}
 		//err为nil，token为nil
-		if t == nil || !t.Valid {
+		//不需要校验过期时间，如果过期t.Valid为false
+		if t == nil || !t.Valid || claims.Uid == 0 {
 			c.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
-
 		//登录校验结束----------说明登录成功
+
+		//过了10s 刷新一次
+		if claims.ExpiresAt.Time.Sub(time.Now()) < time.Second*50 {
+			claims.ExpiresAt = jwt.NewNumericDate(time.Now().Add(time.Minute))
+			tokenStr, err = t.SignedString([]byte("sDKU8mor4FhrCDsFmmMYifqYb8u2X4c7"))
+			if err != nil {
+				//记录日志 可以不影响程序执行
+
+			}
+
+			c.Header("x-jwt-token", tokenStr)
+		}
+
+		c.Set("claims", claims)
 
 	}
 

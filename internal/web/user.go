@@ -8,6 +8,7 @@ import (
 	"github.com/jym/webook/internal/domain"
 	"github.com/jym/webook/internal/service"
 	"net/http"
+	"time"
 )
 
 const emailRegexPattern = "^\\w+([-+.]\\w+)*@\\w+([-.]\\w+)*\\.\\w+([-.]\\w+)*$"
@@ -34,7 +35,7 @@ func (u *UserHandler) RegisterRouters(s *gin.Engine) {
 	ug.POST("/signup", u.Signup)
 	ug.POST("/login", u.LoginJWT)
 	ug.POST("/edit", u.Edit)
-	ug.GET("/profile", u.Profile)
+	ug.GET("/profile", u.JWTProfile)
 }
 
 func (u *UserHandler) Signup(c *gin.Context) {
@@ -107,7 +108,7 @@ func (u *UserHandler) LoginJWT(c *gin.Context) {
 		c.JSON(http.StatusOK, "系统错误")
 		return
 	}
-	_, err := u.svc.Login(c, req.Email, req.Password)
+	user, err := u.svc.Login(c, req.Email, req.Password)
 	if err == service.ErrInvalidUserOrPassword {
 		c.JSON(http.StatusOK, "账号或者密码错误")
 		return
@@ -119,7 +120,14 @@ func (u *UserHandler) LoginJWT(c *gin.Context) {
 	}
 	//登录成功，保持登录逻辑
 	//使用JWT
-	token := jwt.New(jwt.SigningMethodHS512)
+
+	//JWT加入个人数据 比如：userID
+	claims := UserClaims{
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute)),
+		},
+		Uid: user.Id}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
 	tokenStr, err := token.SignedString([]byte("sDKU8mor4FhrCDsFmmMYifqYb8u2X4c7"))
 	if err != nil {
 		c.JSON(http.StatusOK, "系统错误")
@@ -188,4 +196,26 @@ func (u *UserHandler) Edit(c *gin.Context) {
 }
 func (u *UserHandler) Profile(c *gin.Context) {
 
+}
+func (u *UserHandler) JWTProfile(c *gin.Context) {
+	claims, ok := c.Get("claims")
+	if !ok {
+		c.JSON(http.StatusOK, "系统错误")
+		return
+	}
+	claimsValue, ok := claims.(*UserClaims)
+	if !ok {
+		c.JSON(http.StatusOK, "系统错误")
+		return
+	}
+	c.JSON(http.StatusOK, claimsValue.Uid)
+
+}
+
+type UserClaims struct {
+	//嵌入这个结构体实现了 jwt.Claims接口，从而可以传入函数
+	jwt.RegisteredClaims
+	//声明你自己要放入token里面的数据
+	Uid int64
+	//自己随便加 但是最好不要加入敏感数据
 }
