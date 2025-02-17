@@ -39,9 +39,9 @@ func initWebServer() *gin.Engine {
 		//如果省略，那么所有方法都允许
 		AllowMethods: []string{"PUT", "PATCH"},
 		// 允许的 HTTP 头部（CORS中的Access-Control-Allow-Headers）
-		AllowHeaders: []string{"Content-Type"},
+		AllowHeaders: []string{"Content-Type", "Authorization"},
 		// 暴露的 HTTP 头部（CORS中的Access-Control-Expose-Headers）
-		ExposeHeaders: []string{"Content-Length"},
+		ExposeHeaders: []string{"Content-Length", "x-jwt-token"},
 		// 是否允许携带身份凭证（CORS中的Access-Control-Allow-Credentials）
 		AllowCredentials: true,
 		// 允许源的自定义判断函数，返回true表示允许，false表示不允许
@@ -66,7 +66,7 @@ func initWebServer() *gin.Engine {
 	// 2. 注册会话中间件，所有请求的会话将被命名为 "mysession"，数据存储在 Cookie 中
 	s.Use(sessions.Sessions("mysession", store))
 
-	s.Use(middleware.NewLoginMiddlewareBuilder().CheckLogin())
+	s.Use(middleware.NewLoginJWTMiddlewareBuilder().CheckLogin())
 
 	return s
 }

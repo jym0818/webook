@@ -4,6 +4,7 @@ import (
 	regexp "github.com/dlclark/regexp2"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	jwt "github.com/golang-jwt/jwt/v5"
 	"github.com/jym/webook/internal/domain"
 	"github.com/jym/webook/internal/service"
 	"net/http"
@@ -31,7 +32,7 @@ func NewUserHandler(svc *service.UserService) *UserHandler {
 func (u *UserHandler) RegisterRouters(s *gin.Engine) {
 	ug := s.Group("/users")
 	ug.POST("/signup", u.Signup)
-	ug.POST("/login", u.Login)
+	ug.POST("/login", u.LoginJWT)
 	ug.POST("/edit", u.Edit)
 	ug.GET("/profile", u.Profile)
 }
@@ -94,6 +95,41 @@ func (u *UserHandler) Signup(c *gin.Context) {
 
 	c.JSON(http.StatusOK, "注册成功")
 }
+
+func (u *UserHandler) LoginJWT(c *gin.Context) {
+	type LoginReq struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	var req LoginReq
+	if err := c.Bind(&req); err != nil {
+		//记录日志 而不是把具体的错误返回给前端
+		c.JSON(http.StatusOK, "系统错误")
+		return
+	}
+	_, err := u.svc.Login(c, req.Email, req.Password)
+	if err == service.ErrInvalidUserOrPassword {
+		c.JSON(http.StatusOK, "账号或者密码错误")
+		return
+	}
+	if err != nil {
+		//记录日志 而不是把具体的错误返回给前端
+		c.JSON(http.StatusOK, "系统错误")
+		return
+	}
+	//登录成功，保持登录逻辑
+	//使用JWT
+	token := jwt.New(jwt.SigningMethodHS512)
+	tokenStr, err := token.SignedString([]byte("sDKU8mor4FhrCDsFmmMYifqYb8u2X4c7"))
+	if err != nil {
+		c.JSON(http.StatusOK, "系统错误")
+		return
+	}
+	c.Header("x-jwt-token", tokenStr)
+	c.JSON(http.StatusOK, "登录成功")
+
+}
+
 func (u *UserHandler) Login(c *gin.Context) {
 	type LoginReq struct {
 		Email    string `json:"email"`
