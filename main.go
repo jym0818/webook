@@ -27,13 +27,15 @@ func main() {
 	u := initUser(db)
 	//路由注册
 	u.RegisterRouters(s)
+
 	s.Run(":8080")
 }
 
 func initWebServer() *gin.Engine {
 	s := gin.Default()
 	rdClient := rd.NewClient(&rd.Options{
-		Addr: "localhost:6379",
+		//对应k8s-redis-service.yaml port
+		Addr: "webook-redis:6379",
 	})
 	//限流middleware
 	//限流同一IP 1s 100次
@@ -66,7 +68,7 @@ func initWebServer() *gin.Engine {
 	}))
 
 	// 1. 创建一个基于memstore存的存储
-	store, err := redis.NewStore(16, "tcp", "localhost:6379", "",
+	store, err := redis.NewStore(16, "tcp", "webook-redis:6379", "",
 		[]byte("sDKU8mor4FhrCDsFmmMYifqYb8u2X4c7"), []byte("zP6Va4QtIFrAVbDFOzMQwKtXDfZFpM5i"))
 	if err != nil {
 		panic(err)
@@ -90,7 +92,7 @@ func initUser(db *gorm.DB) *web.UserHandler {
 	return u
 }
 func initDB() *gorm.DB {
-	db, err := gorm.Open(mysql.Open("root:root@tcp(127.0.0.1:13316)/webook?charset=utf8mb4&parseTime=True&loc=Local"), &gorm.Config{})
+	db, err := gorm.Open(mysql.Open("root:root@tcp(webook-mysql:3306)/webook?charset=utf8mb4&parseTime=True&loc=Local"), &gorm.Config{})
 	if err != nil {
 		//我只会在初始化过程中panic
 		//一旦panic goroutine就会结束
