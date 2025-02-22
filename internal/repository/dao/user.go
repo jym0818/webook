@@ -47,6 +47,12 @@ func (dao *UserDAO) FindByEmail(ctx context.Context, email string) (User, error)
 	return u, err
 }
 
+func (dao *UserDAO) FindById(ctx context.Context, id int64) (User, error) {
+	var u User
+	err := dao.db.WithContext(ctx).Where("id = ?", id).First(&u).Error
+	return u, err
+}
+
 // 直接对应数据库表结构 与domain中user不是对应关系，可能会不同
 // domain中的User是领域对象,是DDD中的entity或者聚合根，或者叫做BO
 // 有些人叫做PO、entity，model，都一样

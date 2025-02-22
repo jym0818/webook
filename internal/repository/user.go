@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"github.com/jym/webook/internal/domain"
+	"github.com/jym/webook/internal/repository/cache"
 	"github.com/jym/webook/internal/repository/dao"
 )
 
@@ -10,12 +11,14 @@ var ErrUserDuplicateEmail = dao.ErrUserDuplicateEmail
 var ErrUserNotFound = dao.ErrUserNotFound
 
 type UserRepository struct {
-	dao *dao.UserDAO
+	dao   *dao.UserDAO
+	cache *cache.UserCache
 }
 
-func NewUserReposity(dao *dao.UserDAO) *UserRepository {
+func NewUserReposity(dao *dao.UserDAO, c *cache.UserCache) *UserRepository {
 	return &UserRepository{
-		dao: dao,
+		dao:   dao,
+		cache: c,
 	}
 }
 
@@ -40,10 +43,31 @@ func (repo *UserRepository) FindByEmail(ctx context.Context, email string) (doma
 
 }
 
-func (r *UserRepository) FindById(id int64) {
+func (repo *UserRepository) FindById(ctx context.Context, id int64) (domain.User, error) {
 	//cache里面找
-
-	//再从dao中找
-
+	user, err := repo.cache.Get(ctx, id)
+	//err几种情况
+	//1.缓存有数据-----err为nil
+	//2.缓存没有数据 -----err为
+	//3.缓存出错------err为系统错误，直接返回
+	if err == nil {
+		return user, nil
+	}
+	//err为其他错误（系统错误），怎么办？要不要去数据库加载？
+	//如果现在redis崩溃了（缓存雪崩、穿透了），我们如果让这些请求去数据库上加载，数据库不就崩了吗
+	//选加载------万一redis真崩了，我们必须保护住我们的数据库
+	//选不加载-----用户体验差一点
+	//选加载，我们方案是数据库限流;用orm的middleware
+	ue, err := repo.dao.FindById(ctx, id)
+	if err != nil {
+		return domain.User{}, err
+	}
+	u := domain.User{Id: ue.Id, Email: ue.Email, Password: ue.Password}
 	//回写cache
+	err = repo.cache.Set(ctx, u)
+	if err != nil {
+		//缓存设置失败，我这里怎么办，要不要返回err
+		//不需要返回，打个日志就可以了,要监控好，防止redis崩了
+	}
+	return u, err
 }
