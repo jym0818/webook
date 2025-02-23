@@ -83,6 +83,22 @@ func (u *UserHandler) LoginSMS(c *gin.Context) {
 		})
 		return
 	}
+	//设置登录JWTtoken,可是参数怎么获取呢 uid
+	//所以我们创建一个接口 通过手机号查找，如果手机号不存在，我们则要创建新用户
+	user, err := u.svc.FindOrCreate(c, req.Phone)
+	if err != nil {
+		c.JSON(200, Result{
+			Code: 501001,
+			Msg:  "系统错误",
+		})
+		return
+	}
+	if err := u.SetJWTToken(c, user.Id); err != nil {
+		c.JSON(200, Result{
+			Code: 501001,
+			Msg:  "系统错误",
+		})
+	}
 	c.JSON(200, Result{Code: 4, Msg: "验证码校验通过"})
 }
 func (u *UserHandler) SendLoginSMSCode(c *gin.Context) {
@@ -162,7 +178,7 @@ func (u *UserHandler) Signup(c *gin.Context) {
 		Email:    req.Email,
 		Password: req.Password,
 	})
-	if err == service.ErrUserDuplicateEmail {
+	if err == service.ErrUserDuplicate {
 		c.JSON(http.StatusOK, "重复邮箱，请换一个邮箱")
 		return
 	}
@@ -200,22 +216,30 @@ func (u *UserHandler) LoginJWT(c *gin.Context) {
 	//使用JWT
 
 	//JWT加入个人数据 比如：userID
+	if err := u.SetJWTToken(c, user.Id); err != nil {
+		c.JSON(http.StatusOK, "系统错误")
+		return
+	}
+	c.JSON(http.StatusOK, "登录成功")
+
+}
+
+func (u *UserHandler) SetJWTToken(c *gin.Context, uid int64) error {
 	claims := UserClaims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute)),
 		},
-		Uid:       user.Id,
+		Uid:       uid,
 		UserAgent: c.Request.UserAgent(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
 	tokenStr, err := token.SignedString([]byte("sDKU8mor4FhrCDsFmmMYifqYb8u2X4c7"))
 	if err != nil {
 		c.JSON(http.StatusOK, "系统错误")
-		return
+		return err
 	}
 	c.Header("x-jwt-token", tokenStr)
-	c.JSON(http.StatusOK, "登录成功")
-
+	return nil
 }
 
 func (u *UserHandler) Login(c *gin.Context) {

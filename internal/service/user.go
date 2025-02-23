@@ -8,7 +8,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var ErrUserDuplicateEmail = repository.ErrUserDuplicateEmail
+var ErrUserDuplicate = repository.ErrUserDuplicate
 var ErrInvalidUserOrPassword = errors.New("账号或者密码错误")
 
 type UserService struct {
@@ -52,4 +52,28 @@ func (svc *UserService) Login(ctx context.Context, email, password string) (doma
 
 func (svc *UserService) Profile(ctx context.Context, id int64) (domain.User, error) {
 	return svc.repo.FindById(ctx, id)
+}
+func (svc *UserService) FindOrCreate(ctx context.Context, phone string) (domain.User, error) {
+
+	//快路径
+	u, err := svc.repo.FindByPhone(ctx, phone)
+	if err != repository.ErrUserNotFound {
+		// nil会进来-----也就是有用户的
+		//其他错误也会进来
+		return u, err
+	}
+	//没有用户 要创建
+	//慢路径  一旦服务降级 不走 只保证注册过的用户登录，没注册的用户不提供服务
+	//if c.Get("jiangji") == true {
+	//	return domain.User{}, err
+	//}
+	u = domain.User{Phone: phone}
+	err = svc.repo.Create(ctx, u)
+	if err != nil && err != repository.ErrUserDuplicate {
+		return u, err
+	}
+	//没有id啊，怎么办 再找一边
+	//这个操作很危险，会遇到主从延迟的问题，如果是主从服务器，那么我们只能让Create接口返回
+	return svc.repo.FindByPhone(ctx, phone)
+
 }
