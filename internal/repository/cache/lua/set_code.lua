@@ -8,7 +8,7 @@ local cntKey = key..":cnt"
 local val = ARGV[1]
 --过期时间
 local ttl = tonumber(redis.call("ttl",key))
-if ttl==-1 then
+if ttl == -1 then
     --key存在 但是过期时间没有------系统出错了
     return -2
     --540 = 600-60

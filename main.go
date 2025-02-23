@@ -4,10 +4,13 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/jym/webook/internal/repository"
+	"github.com/jym/webook/internal/repository/cache"
 	"github.com/jym/webook/internal/repository/dao"
 	"github.com/jym/webook/internal/service"
+	"github.com/jym/webook/internal/service/sms/memory"
 	"github.com/jym/webook/internal/web"
 	"github.com/jym/webook/internal/web/middleware"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"strings"
@@ -17,10 +20,11 @@ import (
 func main() {
 	//初始化db和建表
 	db := initDB()
+	redisCmd := initRedis()
 	//初始化web
 	s := initWebServer()
 	//初始化路由
-	u := initUser(db)
+	u := initUser(db, redisCmd)
 	//路由注册
 	u.RegisterRouters(s)
 	s.Run(":8080")
@@ -67,13 +71,19 @@ func initWebServer() *gin.Engine {
 	return s
 }
 
-func initUser(db *gorm.DB) *web.UserHandler {
+func initUser(db *gorm.DB, rdb redis.Cmdable) *web.UserHandler {
 	//也就是说我们都是通过New函数创建结构体，而不是手动创建一个结构体  使用依赖注入
 
-	userDao := dao.NewUserDAO(db)               //需要db
-	repo := repository.NewUserReposity(userDao) //需要dao，上一层
-	svc := service.NewUserService(repo)         //需要repo，上一层
-	u := web.NewUserHandler(svc)                //需要service才能初始化handler，上一层
+	userDao := dao.NewUserDAO(db) //需要db
+	uc := cache.NewUserCache(rdb)
+	repo := repository.NewUserReposity(userDao, uc) //需要dao，上一层
+	svc := service.NewUserService(repo)             //需要repo，上一层
+
+	codeCache := cache.NewCodeCache(rdb)
+	codeRepo := repository.NewCodeRepository(codeCache)
+	smsSvc := memory.NewService()
+	codeSvc := service.NewCodeService(codeRepo, smsSvc)
+	u := web.NewUserHandler(svc, codeSvc) //需要service才能初始化handler，上一层
 	return u
 }
 func initDB() *gorm.DB {
@@ -90,4 +100,10 @@ func initDB() *gorm.DB {
 		panic(err)
 	}
 	return db
+}
+func initRedis() redis.Cmdable {
+	cmd := redis.NewClient(&redis.Options{
+		Addr: "localhost:6379",
+	})
+	return cmd
 }

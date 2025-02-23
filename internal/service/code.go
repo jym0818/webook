@@ -15,8 +15,8 @@ type CodeService struct {
 	smsSvc sms.Service
 }
 
-func NewCodeService(repo *repository.CodeRepository) *CodeService {
-	return &CodeService{repo: repo}
+func NewCodeService(repo *repository.CodeRepository, smsSvc sms.Service) *CodeService {
+	return &CodeService{repo: repo, smsSvc: smsSvc}
 }
 
 // 发送验证码
@@ -25,7 +25,7 @@ func (svc *CodeService) Send(ctx context.Context, biz string, phone string) erro
 	//生成验证码
 	code := svc.generateCode()
 	//放进redis
-	err := svc.repo.Store(ctx, code, biz, phone)
+	err := svc.repo.Store(ctx, biz, code, phone)
 
 	if err != nil {
 		return err

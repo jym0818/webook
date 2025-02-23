@@ -18,13 +18,15 @@ const passwordRegexPattern = `^(?=.*[A-Za-z])(?=.*\d)(?=.*[$@$!%*#?&])[A-Za-z\d$
 // UserHandler 表示与user相关的路由处理
 type UserHandler struct {
 	svc         *service.UserService
+	codeSvc     *service.CodeService
 	emailExp    *regexp.Regexp
 	passwordExp *regexp.Regexp
 }
 
-func NewUserHandler(svc *service.UserService) *UserHandler {
+func NewUserHandler(svc *service.UserService, codeSvc *service.CodeService) *UserHandler {
 	return &UserHandler{
 		svc:         svc,
+		codeSvc:     codeSvc,
 		emailExp:    regexp.MustCompile(emailRegexPattern, regexp.None),
 		passwordExp: regexp.MustCompile(passwordRegexPattern, regexp.None),
 	}
@@ -36,6 +38,30 @@ func (u *UserHandler) RegisterRouters(s *gin.Engine) {
 	ug.POST("/login", u.LoginJWT)
 	ug.POST("/edit", u.Edit)
 	ug.GET("/profile", u.JWTProfile)
+	//发送验证码
+	ug.POST("/login_sms/code/send", u.SendLoginSMSCode)
+}
+func (u *UserHandler) SendLoginSMSCode(c *gin.Context) {
+	type Req struct {
+		Phone string `json:"phone"`
+	}
+	const biz = "login"
+	var req Req
+	if err := c.Bind(&req); err != nil {
+		c.JSON(200, "系统错误")
+		return
+	}
+	err := u.codeSvc.Send(c, biz, req.Phone)
+	if err != nil {
+		c.JSON(200, Result{
+			Code: 501001,
+			Msg:  "系统错误",
+		})
+		return
+	}
+	c.JSON(200, Result{
+		Msg: "发送成功",
+	})
 }
 
 func (u *UserHandler) Signup(c *gin.Context) {
