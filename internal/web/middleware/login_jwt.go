@@ -17,7 +17,8 @@ func NewLoginJWTMiddlewareBuilder() *LoginJWTMiddlewareBuilder {
 
 func (*LoginJWTMiddlewareBuilder) CheckLogin() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if c.Request.URL.Path == "/users/login" || c.Request.URL.Path == "/users/signup" || c.Request.URL.Path == "/users/login_sms/code/send" {
+		if c.Request.URL.Path == "/users/login" || c.Request.URL.Path == "/users/signup" ||
+			c.Request.URL.Path == "/users/login_sms/code/send" || c.Request.URL.Path == "/users/login_sms" {
 			return
 		}
 

@@ -57,6 +57,7 @@ func (c *CodeCache) Key(biz, phone string) string {
 func (c *CodeCache) Verify(ctx context.Context, biz, phone, code string) (bool, error) {
 	//获取
 	res, err := c.client.Eval(ctx, luaVerifyCode, []string{c.Key(biz, phone)}, code).Int()
+	fmt.Println(res)
 	if err != nil {
 		return false, err
 	}

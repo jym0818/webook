@@ -14,6 +14,7 @@ import (
 const emailRegexPattern = "^\\w+([-+.]\\w+)*@\\w+([-.]\\w+)*\\.\\w+([-.]\\w+)*$"
 
 const passwordRegexPattern = `^(?=.*[A-Za-z])(?=.*\d)(?=.*[$@$!%*#?&])[A-Za-z\d$@$!%*#?&]{8,}$`
+const biz = "login"
 
 // UserHandler 表示与user相关的路由处理
 type UserHandler struct {
@@ -40,18 +41,34 @@ func (u *UserHandler) RegisterRouters(s *gin.Engine) {
 	ug.GET("/profile", u.JWTProfile)
 	//发送验证码
 	ug.POST("/login_sms/code/send", u.SendLoginSMSCode)
+	ug.POST("/login_sms", u.LoginSMS)
 }
-func (u *UserHandler) SendLoginSMSCode(c *gin.Context) {
+
+func (u *UserHandler) LoginSMS(c *gin.Context) {
 	type Req struct {
 		Phone string `json:"phone"`
+		Code  string `json:"code"`
 	}
-	const biz = "login"
+
 	var req Req
+
 	if err := c.Bind(&req); err != nil {
-		c.JSON(200, "系统错误")
+		c.JSON(200, Result{
+			Code: 501001,
+			Msg:  "系统错误",
+		})
 		return
 	}
-	err := u.codeSvc.Send(c, biz, req.Phone)
+	if req.Phone == "" || req.Code == "" {
+		//正常使用正则表达式验证，此处简写
+		c.JSON(200, Result{
+			Code: 501001,
+			Msg:  "输入有误",
+		})
+		return
+	}
+
+	ok, err := u.codeSvc.Verify(c, biz, req.Phone, req.Code)
 	if err != nil {
 		c.JSON(200, Result{
 			Code: 501001,
@@ -59,9 +76,44 @@ func (u *UserHandler) SendLoginSMSCode(c *gin.Context) {
 		})
 		return
 	}
-	c.JSON(200, Result{
-		Msg: "发送成功",
-	})
+	if !ok {
+		c.JSON(200, Result{
+			Code: 4,
+			Msg:  "验证码有误",
+		})
+		return
+	}
+	c.JSON(200, Result{Code: 4, Msg: "验证码校验通过"})
+}
+func (u *UserHandler) SendLoginSMSCode(c *gin.Context) {
+	type Req struct {
+		Phone string `json:"phone"`
+	}
+
+	var req Req
+
+	if err := c.Bind(&req); err != nil {
+		c.JSON(200, "系统错误")
+		return
+	}
+	if req.Phone == "" {
+		//正常使用正则表达式验证，此处简写
+		c.JSON(200, Result{
+			Code: 501001,
+			Msg:  "输入有误",
+		})
+		return
+	}
+
+	err := u.codeSvc.Send(c, biz, req.Phone)
+	switch err {
+	case nil:
+		c.JSON(200, Result{Msg: "发送成功"})
+	case service.ErrSetCodeTooMany:
+		c.JSON(200, Result{Code: 4, Msg: "发送频繁"})
+	default:
+		c.JSON(200, Result{Code: 5, Msg: "系统错误"})
+	}
 }
 
 func (u *UserHandler) Signup(c *gin.Context) {
