@@ -12,13 +12,19 @@ import (
 var ErrUserDuplicate = dao.ErrUserDuplicate
 var ErrUserNotFound = dao.ErrUserNotFound
 
-type UserRepository struct {
-	dao   *dao.UserDAO
-	cache *cache.UserCache
+type UserRepository interface {
+	Create(ctx context.Context, u domain.User) error
+	FindByEmail(ctx context.Context, email string) (domain.User, error)
+	FindByPhone(ctx context.Context, phone string) (domain.User, error)
+	FindById(ctx context.Context, id int64) (domain.User, error)
+}
+type CacheUserRepository struct {
+	dao   dao.UserDAO
+	cache cache.UserCache
 }
 
-func NewUserReposity(dao *dao.UserDAO, c *cache.UserCache) *UserRepository {
-	return &UserRepository{
+func NewUserReposity(dao dao.UserDAO, c cache.UserCache) UserRepository {
+	return &CacheUserRepository{
 		dao:   dao,
 		cache: c,
 	}
@@ -26,12 +32,12 @@ func NewUserReposity(dao *dao.UserDAO, c *cache.UserCache) *UserRepository {
 
 // 命名为Create 因为在这一层级repository中已经没有signup的概念了
 // 数据传递通常为结构体，而不是结构体指针
-func (repo *UserRepository) Create(ctx context.Context, u domain.User) error {
+func (repo *CacheUserRepository) Create(ctx context.Context, u domain.User) error {
 	//调用底层数据库--->dao层
 	return repo.dao.Insert(ctx, repo.DomainToEntity(u))
 }
 
-func (repo *UserRepository) FindByEmail(ctx context.Context, email string) (domain.User, error) {
+func (repo *CacheUserRepository) FindByEmail(ctx context.Context, email string) (domain.User, error) {
 	//调用底层数据库--->dao层
 	u, err := repo.dao.FindByEmail(ctx, email)
 	if err != nil {
@@ -41,7 +47,7 @@ func (repo *UserRepository) FindByEmail(ctx context.Context, email string) (doma
 	return repo.entityToDomain(u), nil
 
 }
-func (repo *UserRepository) FindByPhone(ctx context.Context, phone string) (domain.User, error) {
+func (repo *CacheUserRepository) FindByPhone(ctx context.Context, phone string) (domain.User, error) {
 	//调用底层数据库--->dao层
 	u, err := repo.dao.FindByPhone(ctx, phone)
 	if err != nil {
@@ -52,7 +58,7 @@ func (repo *UserRepository) FindByPhone(ctx context.Context, phone string) (doma
 
 }
 
-func (repo *UserRepository) FindById(ctx context.Context, id int64) (domain.User, error) {
+func (repo *CacheUserRepository) FindById(ctx context.Context, id int64) (domain.User, error) {
 	//cache里面找
 	user, err := repo.cache.Get(ctx, id)
 	//err几种情况
@@ -81,7 +87,7 @@ func (repo *UserRepository) FindById(ctx context.Context, id int64) (domain.User
 	return u, err
 }
 
-func (repo *UserRepository) entityToDomain(ud dao.User) domain.User {
+func (repo *CacheUserRepository) entityToDomain(ud dao.User) domain.User {
 	return domain.User{
 		Id:       ud.Id,
 		Email:    ud.Email.String,
@@ -90,7 +96,7 @@ func (repo *UserRepository) entityToDomain(ud dao.User) domain.User {
 		Ctime:    time.UnixMilli(ud.Ctime),
 	}
 }
-func (repo *UserRepository) DomainToEntity(u domain.User) dao.User {
+func (repo *CacheUserRepository) DomainToEntity(u domain.User) dao.User {
 	return dao.User{
 		Id: u.Id,
 		Email: sql.NullString{

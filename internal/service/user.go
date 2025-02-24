@@ -11,15 +11,21 @@ import (
 var ErrUserDuplicate = repository.ErrUserDuplicate
 var ErrInvalidUserOrPassword = errors.New("账号或者密码错误")
 
-type UserService struct {
-	repo *repository.UserRepository
+type UserService interface {
+	SignUp(ctx context.Context, u domain.User) error
+	Login(ctx context.Context, email, password string) (domain.User, error)
+	Profile(ctx context.Context, id int64) (domain.User, error)
+	FindOrCreate(ctx context.Context, phone string) (domain.User, error)
+}
+type userService struct {
+	repo repository.UserRepository
 }
 
-func NewUserService(repo *repository.UserRepository) *UserService {
-	return &UserService{repo: repo}
+func NewUserService(repo repository.UserRepository) UserService {
+	return &userService{repo: repo}
 }
 
-func (svc *UserService) SignUp(ctx context.Context, u domain.User) error {
+func (svc *userService) SignUp(ctx context.Context, u domain.User) error {
 	//加密
 	hash, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
 
@@ -31,7 +37,7 @@ func (svc *UserService) SignUp(ctx context.Context, u domain.User) error {
 	return svc.repo.Create(ctx, u)
 }
 
-func (svc *UserService) Login(ctx context.Context, email, password string) (domain.User, error) {
+func (svc *userService) Login(ctx context.Context, email, password string) (domain.User, error) {
 	//查找
 	u, err := svc.repo.FindByEmail(ctx, email)
 	if err == repository.ErrUserNotFound {
@@ -50,10 +56,10 @@ func (svc *UserService) Login(ctx context.Context, email, password string) (doma
 
 }
 
-func (svc *UserService) Profile(ctx context.Context, id int64) (domain.User, error) {
+func (svc *userService) Profile(ctx context.Context, id int64) (domain.User, error) {
 	return svc.repo.FindById(ctx, id)
 }
-func (svc *UserService) FindOrCreate(ctx context.Context, phone string) (domain.User, error) {
+func (svc *userService) FindOrCreate(ctx context.Context, phone string) (domain.User, error) {
 
 	//快路径
 	u, err := svc.repo.FindByPhone(ctx, phone)

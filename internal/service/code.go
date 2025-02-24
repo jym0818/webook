@@ -12,18 +12,22 @@ const codeTplId = "2367159"
 
 var ErrSetCodeTooMany = repository.ErrSetCodeTooMany
 
-type CodeService struct {
-	repo   *repository.CodeRepository
+type CodeService interface {
+	Send(ctx context.Context, biz string, phone string) error
+	Verify(ctx context.Context, biz, phone, inputCode string) (bool, error)
+}
+type codeService struct {
+	repo   repository.CodeRepository
 	smsSvc sms.Service
 }
 
-func NewCodeService(repo *repository.CodeRepository, smsSvc sms.Service) *CodeService {
-	return &CodeService{repo: repo, smsSvc: smsSvc}
+func NewCodeService(repo repository.CodeRepository, smsSvc sms.Service) CodeService {
+	return &codeService{repo: repo, smsSvc: smsSvc}
 }
 
 // 发送验证码
 // 多个业务会发送验证码 biz来区分业务场景
-func (svc *CodeService) Send(ctx context.Context, biz string, phone string) error {
+func (svc *codeService) Send(ctx context.Context, biz string, phone string) error {
 	//生成验证码
 	code := svc.generateCode()
 	//放进redis
@@ -45,17 +49,17 @@ func (svc *CodeService) Send(ctx context.Context, biz string, phone string) erro
 
 }
 
-//func (svc *CodeService) Verfiy(ctx context.Context, biz string, inputCode string, phone string) (bool, error) {
+//func (svc *codeService) Verfiy(ctx context.Context, biz string, inputCode string, phone string) (bool, error) {
 //
 //}
 
-func (svc *CodeService) generateCode() string {
+func (svc *codeService) generateCode() string {
 	//0 - 999999 之间 包含0 和999999
 	num := rand.Intn(1000000)
 	//不够6位 加上前缀0
 	return fmt.Sprintf("%06d", num)
 }
 
-func (svc *CodeService) Verify(ctx context.Context, biz, phone, inputCode string) (bool, error) {
+func (svc *codeService) Verify(ctx context.Context, biz, phone, inputCode string) (bool, error) {
 	return svc.repo.Verify(ctx, biz, phone, inputCode)
 }
