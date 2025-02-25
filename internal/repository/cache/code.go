@@ -50,7 +50,7 @@ func (c *RedisCodeCache) Set(ctx context.Context, biz string, phone string, code
 		return ErrSetCodeTooMany
 	default:
 		//系统错误
-		return errors.New("系统错误")
+		return ErrUnknownForCode
 	}
 }
 
@@ -74,6 +74,6 @@ func (c *RedisCodeCache) Verify(ctx context.Context, biz, phone, code string) (b
 	case -2:
 		return false, nil
 	default:
-		return false, ErrUnknownForCode
+		return false, nil
 	}
 }

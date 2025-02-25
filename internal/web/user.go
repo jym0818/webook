@@ -141,7 +141,7 @@ func (u *UserHandler) Signup(c *gin.Context) {
 	var req SignUpReq
 	if err := c.Bind(&req); err != nil {
 		//记录日志 而不是把具体的错误返回给前端
-		c.JSON(http.StatusOK, "系统错误")
+		//bind会自动返回错误
 		return
 	}
 	//参数校验  使用正则匹配
@@ -154,7 +154,7 @@ func (u *UserHandler) Signup(c *gin.Context) {
 		return
 	}
 	if !ok {
-		c.JSON(http.StatusOK, "邮箱格式不正确")
+		c.String(http.StatusOK, "邮箱格式不正确")
 		return
 	}
 
@@ -165,11 +165,11 @@ func (u *UserHandler) Signup(c *gin.Context) {
 		return
 	}
 	if !ok {
-		c.JSON(http.StatusOK, "密码必须包含数字、特殊字符，并且长度不能小于 8 位")
+		c.String(http.StatusOK, "密码必须包含数字、特殊字符，并且长度不能小于 8 位")
 		return
 	}
 	if req.Password != req.ConfirmPassword {
-		c.JSON(http.StatusOK, "两次密码不同")
+		c.String(http.StatusOK, "两次密码不同")
 		return
 	}
 
@@ -179,16 +179,16 @@ func (u *UserHandler) Signup(c *gin.Context) {
 		Password: req.Password,
 	})
 	if err == service.ErrUserDuplicate {
-		c.JSON(http.StatusOK, "重复邮箱，请换一个邮箱")
+		c.String(http.StatusOK, "重复邮箱，请换一个邮箱")
 		return
 	}
 	if err != nil {
 		//记录日志，而不是返回具体错误给前端
-		c.JSON(http.StatusOK, "系统错误")
+		c.String(http.StatusOK, "系统错误")
 		return
 	}
 
-	c.JSON(http.StatusOK, "注册成功")
+	c.String(http.StatusOK, "注册成功")
 }
 
 func (u *UserHandler) LoginJWT(c *gin.Context) {
