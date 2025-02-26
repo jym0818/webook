@@ -1,9 +1,9 @@
 package ioc
 
 import (
-	"github.com/jym/webook/internal/service/ratelimit"
 	"github.com/jym/webook/internal/service/sms"
 	"github.com/jym/webook/internal/service/sms/memory"
+	"github.com/jym/webook/internal/service/sms/ratelimit"
 	ratelimit2 "github.com/jym/webook/pkg/ratelimit"
 	"github.com/redis/go-redis/v9"
 	"time"

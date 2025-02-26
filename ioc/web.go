@@ -5,8 +5,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jym/webook/internal/web"
 	"github.com/jym/webook/internal/web/middleware"
-	"github.com/jym/webook/pkg/ginx/middleware/ratelimit"
-	"github.com/redis/go-redis/v9"
 	"strings"
 	"time"
 )
@@ -18,9 +16,9 @@ func InitGin(mdls []gin.HandlerFunc, hdl *web.UserHandler) *gin.Engine {
 	return s
 }
 
-func InitMiddlewares(rdClient redis.Cmdable) []gin.HandlerFunc {
+func InitMiddlewares() []gin.HandlerFunc {
 	return []gin.HandlerFunc{
-		ratelimit.NewBuilder(rdClient, time.Second, 100).Build(),
+		//ratelimit.NewBuilder(rdClient, time.Second, 100).Build(),
 		cors.New(cors.Config{
 			// 允许的源地址（CORS中的Access-Control-Allow-Origin）
 			// AllowOrigins: []string{"https://foo.com"},
