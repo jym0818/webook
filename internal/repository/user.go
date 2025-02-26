@@ -79,12 +79,12 @@ func (repo *CacheUserRepository) FindById(ctx context.Context, id int64) (domain
 	}
 	u := repo.entityToDomain(ue)
 	//回写cache
-	err = repo.cache.Set(ctx, u)
-	if err != nil {
-		//缓存设置失败，我这里怎么办，要不要返回err
-		//不需要返回，打个日志就可以了,要监控好，防止redis崩了
-	}
-	return u, err
+	_ = repo.cache.Set(ctx, u)
+	//if err != nil {
+	//	//缓存设置失败，我这里怎么办，要不要返回err
+	//	//不需要返回，打个日志就可以了,要监控好，防止redis崩了
+	//}
+	return u, nil
 }
 
 func (repo *CacheUserRepository) entityToDomain(ud dao.User) domain.User {
