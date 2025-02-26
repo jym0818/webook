@@ -7,21 +7,20 @@ import (
 	"github.com/jym/webook/pkg/ratelimit"
 )
 
-var errLimited = fmt.Errorf("出发了限流")
-
-type RatelimitSMSService struct {
-	svc     sms.Service
+// 通过组合 默认实现了sms.Service接口
+type RatelimitSMSServiceV1 struct {
+	sms.Service
 	limiter ratelimit.Limiter
 }
 
-func NewRatelimitSMSService(svc sms.Service, limiter ratelimit.Limiter) sms.Service {
-	return &RatelimitSMSService{
-		svc:     svc,
+func NewRatelimitSMSServiceV1(svc sms.Service, limiter ratelimit.Limiter) sms.Service {
+	return &RatelimitSMSServiceV1{
+		Service: svc,
 		limiter: limiter,
 	}
 }
 
-func (s RatelimitSMSService) Send(ctx context.Context, tpl string, args []string, numbers ...string) error {
+func (s RatelimitSMSServiceV1) Send(ctx context.Context, tpl string, args []string, numbers ...string) error {
 	//你在这里加上代码  新特性
 	limited, err := s.limiter.Limit(ctx, "sms:tencent")
 	if err != nil {
@@ -31,7 +30,7 @@ func (s RatelimitSMSService) Send(ctx context.Context, tpl string, args []string
 		return errLimited
 	}
 
-	err = s.svc.Send(ctx, tpl, args, numbers...)
+	err = s.Send(ctx, tpl, args, numbers...)
 	//你也可以在这里代码  新特性
 	return err
 }
