@@ -9,10 +9,11 @@ import (
 	"time"
 )
 
-func InitGin(mdls []gin.HandlerFunc, hdl *web.UserHandler) *gin.Engine {
+func InitGin(mdls []gin.HandlerFunc, hdl *web.UserHandler, oauth2WechatHdl *web.OAuth2WechatHandler) *gin.Engine {
 	s := gin.Default()
 	s.Use(mdls...)
 	hdl.RegisterRouters(s)
+	oauth2WechatHdl.RegisterRouters(s)
 	return s
 }
 

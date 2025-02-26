@@ -19,8 +19,9 @@ func InitWebServer() *gin.Engine {
 		dao.NewUserDAO, cache.NewCodeCache, cache.NewUserCache,
 		repository.NewUserReposity, repository.NewCodeRepository,
 		service.NewUserService, service.NewCodeService,
-		ioc.InitSMSService,
+		ioc.InitSMSService, ioc.InitOAuth2WechatService,
 		web.NewUserHandler,
+		web.NewOAuth2WechatHandler,
 		//组装gin.Default 和中间件
 		ioc.InitGin,
 		ioc.InitMiddlewares,
