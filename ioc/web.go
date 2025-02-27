@@ -29,7 +29,7 @@ func InitMiddlewares() []gin.HandlerFunc {
 			// 允许的 HTTP 头部（CORS中的Access-Control-Allow-Headers）
 			AllowHeaders: []string{"Content-Type", "Authorization"},
 			// 暴露的 HTTP 头部（CORS中的Access-Control-Expose-Headers）
-			ExposeHeaders: []string{"Content-Length", "x-jwt-token"},
+			ExposeHeaders: []string{"Content-Length", "x-jwt-token", "x-refresh-token"},
 			// 是否允许携带身份凭证（CORS中的Access-Control-Allow-Credentials）
 			AllowCredentials: true,
 			// 允许源的自定义判断函数，返回true表示允许，false表示不允许

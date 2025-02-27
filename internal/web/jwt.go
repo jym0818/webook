@@ -8,6 +8,16 @@ import (
 )
 
 type jwtHandler struct {
+	//access token key
+	atKey []byte
+	//refresh token key
+	rtKey []byte
+}
+
+func NewJWTHandler() *jwtHandler {
+	return &jwtHandler{
+		atKey: []byte("sDKU8mor4FhrCDsFmmMYifqYb8u2X4c7"),
+		rtKey: []byte("sDKU8mor4FhrCDsFmmMYifqYb9u2X4c8")}
 }
 
 func (h jwtHandler) SetJWTToken(c *gin.Context, uid int64) error {
@@ -19,13 +29,36 @@ func (h jwtHandler) SetJWTToken(c *gin.Context, uid int64) error {
 		UserAgent: c.Request.UserAgent(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
-	tokenStr, err := token.SignedString([]byte("sDKU8mor4FhrCDsFmmMYifqYb8u2X4c7"))
+	tokenStr, err := token.SignedString(h.atKey)
 	if err != nil {
 		c.JSON(http.StatusOK, "系统错误")
 		return err
 	}
 	c.Header("x-jwt-token", tokenStr)
 	return nil
+}
+
+func (h jwtHandler) setRefreshToken(c *gin.Context, uid int64) error {
+	claims := RefreshClaims{
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24 * 7)),
+		},
+		Uid: uid,
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
+	tokenStr, err := token.SignedString(h.rtKey)
+	if err != nil {
+		c.JSON(http.StatusOK, "系统错误")
+		return err
+	}
+	c.Header("x-refresh-token", tokenStr)
+	return nil
+}
+
+type RefreshClaims struct {
+	jwt.RegisteredClaims
+	//声明你自己要放入token里面的数据
+	Uid int64
 }
 
 type UserClaims struct {

@@ -100,6 +100,14 @@ func (u *UserHandler) LoginSMS(c *gin.Context) {
 			Msg:  "系统错误",
 		})
 	}
+
+	if err := u.setRefreshToken(c, user.Id); err != nil {
+		c.JSON(200, Result{
+			Code: 501001,
+			Msg:  "系统错误",
+		})
+	}
+
 	c.JSON(200, Result{Code: 4, Msg: "验证码校验通过"})
 }
 func (u *UserHandler) SendLoginSMSCode(c *gin.Context) {
@@ -221,6 +229,11 @@ func (u *UserHandler) LoginJWT(c *gin.Context) {
 		c.JSON(http.StatusOK, "系统错误")
 		return
 	}
+	if err := u.setRefreshToken(c, user.Id); err != nil {
+		c.JSON(http.StatusOK, "系统错误")
+		return
+	}
+
 	c.JSON(http.StatusOK, "登录成功")
 
 }
