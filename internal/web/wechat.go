@@ -27,10 +27,11 @@ type WechatHandlerConfig struct {
 
 func NewOAuth2WechatHandler(svc wechat.Service, userSvc service.UserService, cfg WechatHandlerConfig) *OAuth2WechatHandler {
 	return &OAuth2WechatHandler{
-		svc:      svc,
-		userSvc:  userSvc,
-		stateKey: []byte("12345678912345678912345678912345"),
-		cfg:      cfg,
+		svc:        svc,
+		userSvc:    userSvc,
+		stateKey:   []byte("12345678912345678912345678912345"),
+		cfg:        cfg,
+		jwtHandler: newJWTHandler(),
 	}
 }
 

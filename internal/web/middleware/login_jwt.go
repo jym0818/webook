@@ -5,7 +5,6 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/jym/webook/internal/web"
 	"net/http"
-	"time"
 )
 
 type LoginJWTMiddlewareBuilder struct{}
@@ -18,7 +17,8 @@ func (*LoginJWTMiddlewareBuilder) CheckLogin() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if c.Request.URL.Path == "/users/login" || c.Request.URL.Path == "/users/signup" ||
 			c.Request.URL.Path == "/users/login_sms/code/send" || c.Request.URL.Path == "/users/login_sms" ||
-			c.Request.URL.Path == "/oauth2/wechat/authurl" || c.Request.URL.Path == "/oauth2/wechat/callback" {
+			c.Request.URL.Path == "/oauth2/wechat/authurl" || c.Request.URL.Path == "/oauth2/wechat/callback" ||
+			c.Request.URL.Path == "/users/refresh_token" {
 			return
 		}
 
@@ -52,20 +52,6 @@ func (*LoginJWTMiddlewareBuilder) CheckLogin() gin.HandlerFunc {
 			c.AbortWithStatus(http.StatusUnauthorized)
 			return
 
-		}
-
-		//登录校验结束----------说明登录成功
-
-		//过了10s 刷新一次
-		if claims.ExpiresAt.Time.Sub(time.Now()) < time.Second*50 {
-			claims.ExpiresAt = jwt.NewNumericDate(time.Now().Add(time.Minute))
-			tokenStr, err = t.SignedString([]byte("sDKU8mor4FhrCDsFmmMYifqYb8u2X4c7"))
-			if err != nil {
-				//记录日志 可以不影响程序执行
-
-			}
-
-			c.Header("x-jwt-token", tokenStr)
 		}
 
 		c.Set("claims", claims)

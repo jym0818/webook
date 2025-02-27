@@ -31,6 +31,7 @@ func NewUserHandler(svc service.UserService, codeSvc service.CodeService) *UserH
 		codeSvc:     codeSvc,
 		emailExp:    regexp.MustCompile(emailRegexPattern, regexp.None),
 		passwordExp: regexp.MustCompile(passwordRegexPattern, regexp.None),
+		jwtHandler:  newJWTHandler(), //因为jwtHandler有字段需要初始化，所以使用方法
 	}
 }
 

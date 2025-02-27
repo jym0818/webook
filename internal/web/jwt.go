@@ -15,8 +15,8 @@ type jwtHandler struct {
 	rtKey []byte
 }
 
-func NewJWTHandler() *jwtHandler {
-	return &jwtHandler{
+func newJWTHandler() jwtHandler {
+	return jwtHandler{
 		atKey: []byte("sDKU8mor4FhrCDsFmmMYifqYb8u2X4c7"),
 		rtKey: []byte("sDKU8mor4FhrCDsFmmMYifqYb9u2X4c8")}
 }
