@@ -5,7 +5,6 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/jym/webook/internal/web"
 	"net/http"
-	"strings"
 	"time"
 )
 
@@ -24,19 +23,7 @@ func (*LoginJWTMiddlewareBuilder) CheckLogin() gin.HandlerFunc {
 		}
 
 		//JWT token
-		token := c.GetHeader("Authorization")
-		if token == "" {
-			//没登陆
-			c.AbortWithStatus(http.StatusUnauthorized)
-			return
-		}
-		sges := strings.SplitN(token, " ", 2)
-		//传的格式错误，瞎几把传的，相当于没登陆
-		if len(sges) != 2 {
-			c.AbortWithStatus(http.StatusUnauthorized)
-			return
-		}
-		tokenStr := sges[1]
+		tokenStr := web.ExtractToken(c)
 		claims := &web.UserClaims{}
 		t, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
 			return []byte("sDKU8mor4FhrCDsFmmMYifqYb8u2X4c7"), nil

@@ -43,6 +43,7 @@ func (u *UserHandler) RegisterRouters(s *gin.Engine) {
 	//发送验证码
 	ug.POST("/login_sms/code/send", u.SendLoginSMSCode)
 	ug.POST("/login_sms", u.LoginSMS)
+	ug.POST("/refresh_token", u.RefreshToken)
 }
 
 func (u *UserHandler) LoginSMS(c *gin.Context) {
@@ -291,6 +292,27 @@ func (u *UserHandler) Login(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, "登录成功")
 
+}
+
+func (u *UserHandler) RefreshToken(c *gin.Context) {
+	//只有这个接口拿出来的是长token，剩下的都是短token
+	refreshToken := ExtractToken(c)
+	var rc RefreshClaims
+	token, err := jwt.ParseWithClaims(refreshToken, &rc, func(*jwt.Token) (interface{}, error) {
+		return u.rtKey, nil
+	})
+	if err != nil || !token.Valid {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	err = u.SetJWTToken(c, rc.Uid)
+	if err != nil {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	c.JSON(http.StatusOK, Result{
+		Msg: "ok",
+	})
 }
 
 func (u *UserHandler) Logout(c *gin.Context) {

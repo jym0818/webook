@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -68,4 +69,16 @@ type UserClaims struct {
 	Uid int64
 	//自己随便加 但是最好不要加入敏感数据
 	UserAgent string
+}
+
+func ExtractToken(c *gin.Context) string {
+	//JWT token
+	token := c.GetHeader("Authorization")
+
+	sges := strings.SplitN(token, " ", 2)
+
+	if len(sges) != 2 {
+		return ""
+	}
+	return sges[1]
 }
