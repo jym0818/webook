@@ -1,19 +1,25 @@
 package middleware
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/jym/webook/internal/web"
+	"github.com/redis/go-redis/v9"
 	"net/http"
 )
 
-type LoginJWTMiddlewareBuilder struct{}
-
-func NewLoginJWTMiddlewareBuilder() *LoginJWTMiddlewareBuilder {
-	return &LoginJWTMiddlewareBuilder{}
+type LoginJWTMiddlewareBuilder struct {
+	cmd redis.Cmdable
 }
 
-func (*LoginJWTMiddlewareBuilder) CheckLogin() gin.HandlerFunc {
+func NewLoginJWTMiddlewareBuilder(cmd redis.Cmdable) *LoginJWTMiddlewareBuilder {
+	return &LoginJWTMiddlewareBuilder{
+		cmd: cmd,
+	}
+}
+
+func (l *LoginJWTMiddlewareBuilder) CheckLogin() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if c.Request.URL.Path == "/users/login" || c.Request.URL.Path == "/users/signup" ||
 			c.Request.URL.Path == "/users/login_sms/code/send" || c.Request.URL.Path == "/users/login_sms" ||
@@ -54,6 +60,13 @@ func (*LoginJWTMiddlewareBuilder) CheckLogin() gin.HandlerFunc {
 
 		}
 
+		//验证是否退出
+		cnt, err := l.cmd.Exists(c, fmt.Sprintf("users:ssod:%s", claims.Ssid)).Result()
+		if err != nil || cnt > 0 {
+			//要么redis有问题，要么token退出登录了
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
 		c.Set("claims", claims)
 
 	}

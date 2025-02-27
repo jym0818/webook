@@ -1,12 +1,14 @@
 package web
 
 import (
+	"fmt"
 	regexp "github.com/dlclark/regexp2"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	jwt "github.com/golang-jwt/jwt/v5"
 	"github.com/jym/webook/internal/domain"
 	"github.com/jym/webook/internal/service"
+	"github.com/redis/go-redis/v9"
 	"net/http"
 	"time"
 )
@@ -23,15 +25,17 @@ type UserHandler struct {
 	emailExp    *regexp.Regexp
 	passwordExp *regexp.Regexp
 	jwtHandler
+	cmd redis.Cmdable
 }
 
-func NewUserHandler(svc service.UserService, codeSvc service.CodeService) *UserHandler {
+func NewUserHandler(svc service.UserService, codeSvc service.CodeService, cmd redis.Cmdable) *UserHandler {
 	return &UserHandler{
 		svc:         svc,
 		codeSvc:     codeSvc,
 		emailExp:    regexp.MustCompile(emailRegexPattern, regexp.None),
 		passwordExp: regexp.MustCompile(passwordRegexPattern, regexp.None),
 		jwtHandler:  newJWTHandler(), //因为jwtHandler有字段需要初始化，所以使用方法
+		cmd:         cmd,
 	}
 }
 
@@ -45,6 +49,33 @@ func (u *UserHandler) RegisterRouters(s *gin.Engine) {
 	ug.POST("/login_sms/code/send", u.SendLoginSMSCode)
 	ug.POST("/login_sms", u.LoginSMS)
 	ug.POST("/refresh_token", u.RefreshToken)
+	ug.POST("/logout", u.LogoutJWT)
+}
+
+func (u *UserHandler) LogoutJWT(c *gin.Context) {
+	c.Header("x-jwt-token", "")
+	c.Header("x-refresh-token", "")
+	claims, ok := c.Get("claims")
+	if !ok {
+		c.JSON(http.StatusOK, "系统错误")
+		return
+	}
+	claimsValue, ok := claims.(*UserClaims)
+	if !ok {
+		c.JSON(http.StatusOK, "系统错误")
+		return
+	}
+	//过期时间与长token相同
+	err := u.cmd.Set(c, fmt.Sprintf("users:ssod:%s", claimsValue.Ssid), "", time.Hour*24*7).Err()
+	if err != nil {
+		c.JSON(http.StatusOK, Result{
+			Msg: "系统错误",
+		})
+	}
+
+	c.JSON(http.StatusOK, Result{
+		Msg: "退出登录成功",
+	})
 }
 
 func (u *UserHandler) LoginSMS(c *gin.Context) {
@@ -96,14 +127,8 @@ func (u *UserHandler) LoginSMS(c *gin.Context) {
 		})
 		return
 	}
-	if err := u.SetJWTToken(c, user.Id); err != nil {
-		c.JSON(200, Result{
-			Code: 501001,
-			Msg:  "系统错误",
-		})
-	}
 
-	if err := u.setRefreshToken(c, user.Id); err != nil {
+	if err := u.setLoginToken(c, user.Id); err != nil {
 		c.JSON(200, Result{
 			Code: 501001,
 			Msg:  "系统错误",
@@ -226,36 +251,13 @@ func (u *UserHandler) LoginJWT(c *gin.Context) {
 	//登录成功，保持登录逻辑
 	//使用JWT
 
-	//JWT加入个人数据 比如：userID
-	if err := u.SetJWTToken(c, user.Id); err != nil {
-		c.JSON(http.StatusOK, "系统错误")
-		return
-	}
-	if err := u.setRefreshToken(c, user.Id); err != nil {
+	if err := u.setLoginToken(c, user.Id); err != nil {
 		c.JSON(http.StatusOK, "系统错误")
 		return
 	}
 
 	c.JSON(http.StatusOK, "登录成功")
 
-}
-
-func (u *UserHandler) SetJWTToken(c *gin.Context, uid int64) error {
-	claims := UserClaims{
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute)),
-		},
-		Uid:       uid,
-		UserAgent: c.Request.UserAgent(),
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
-	tokenStr, err := token.SignedString([]byte("sDKU8mor4FhrCDsFmmMYifqYb8u2X4c7"))
-	if err != nil {
-		c.JSON(http.StatusOK, "系统错误")
-		return err
-	}
-	c.Header("x-jwt-token", tokenStr)
-	return nil
 }
 
 func (u *UserHandler) Login(c *gin.Context) {
@@ -296,6 +298,7 @@ func (u *UserHandler) Login(c *gin.Context) {
 }
 
 func (u *UserHandler) RefreshToken(c *gin.Context) {
+
 	//只有这个接口拿出来的是长token，剩下的都是短token
 	refreshToken := ExtractToken(c)
 	var rc RefreshClaims
@@ -306,7 +309,15 @@ func (u *UserHandler) RefreshToken(c *gin.Context) {
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
-	err = u.SetJWTToken(c, rc.Uid)
+
+	cnt, err := u.cmd.Exists(c, fmt.Sprintf("users:ssod:%s", rc.Ssid)).Result()
+	if err != nil || cnt > 0 {
+		//要么redis有问题，要么token退出登录了
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
+	err = u.setJWTToken(c, rc.Uid, rc.Ssid)
 	if err != nil {
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return

@@ -3,6 +3,7 @@ package web
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"net/http"
 	"strings"
 	"time"
@@ -21,13 +22,24 @@ func newJWTHandler() jwtHandler {
 		rtKey: []byte("sDKU8mor4FhrCDsFmmMYifqYb9u2X4c8")}
 }
 
-func (h jwtHandler) SetJWTToken(c *gin.Context, uid int64) error {
+func (h jwtHandler) setLoginToken(c *gin.Context, uid int64) error {
+	ssid := uuid.New().String()
+	err := h.setJWTToken(c, uid, ssid)
+	if err != nil {
+		return err
+	}
+	err = h.setRefreshToken(c, uid, ssid)
+	return err
+}
+
+func (h jwtHandler) setJWTToken(c *gin.Context, uid int64, ssid string) error {
 	claims := UserClaims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute)),
 		},
 		Uid:       uid,
 		UserAgent: c.Request.UserAgent(),
+		Ssid:      ssid,
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
 	tokenStr, err := token.SignedString(h.atKey)
@@ -39,12 +51,13 @@ func (h jwtHandler) SetJWTToken(c *gin.Context, uid int64) error {
 	return nil
 }
 
-func (h jwtHandler) setRefreshToken(c *gin.Context, uid int64) error {
+func (h jwtHandler) setRefreshToken(c *gin.Context, uid int64, ssid string) error {
 	claims := RefreshClaims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24 * 7)),
 		},
-		Uid: uid,
+		Uid:  uid,
+		Ssid: ssid,
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
 	tokenStr, err := token.SignedString(h.rtKey)
@@ -59,7 +72,8 @@ func (h jwtHandler) setRefreshToken(c *gin.Context, uid int64) error {
 type RefreshClaims struct {
 	jwt.RegisteredClaims
 	//声明你自己要放入token里面的数据
-	Uid int64
+	Uid  int64
+	Ssid string
 }
 
 type UserClaims struct {
@@ -69,6 +83,7 @@ type UserClaims struct {
 	Uid int64
 	//自己随便加 但是最好不要加入敏感数据
 	UserAgent string
+	Ssid      string
 }
 
 func ExtractToken(c *gin.Context) string {
