@@ -2,12 +2,24 @@ package ioc
 
 import (
 	"github.com/jym/webook/internal/repository/dao"
+	"github.com/spf13/viper"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
 func InitDB() *gorm.DB {
-	db, err := gorm.Open(mysql.Open("root:root@tcp(127.0.0.1:13316)/webook?charset=utf8mb4&parseTime=True&loc=Local"), &gorm.Config{})
+
+	type Config struct {
+		DSN string `yaml:"dsn"`
+	}
+	var cfg Config = Config{
+		DSN: "root:root@tcp(127.0.0.1:13316)/webook?charset=utf8mb4&parseTime=True&loc=Local",
+	}
+	err := viper.UnmarshalKey("db.mysql", &cfg)
+	if err != nil {
+		panic(err)
+	}
+	db, err := gorm.Open(mysql.Open(cfg.DSN), &gorm.Config{})
 	if err != nil {
 		//我只会在初始化过程中panic
 		//一旦panic goroutine就会结束
