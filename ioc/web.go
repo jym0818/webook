@@ -4,6 +4,7 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/jym/webook/internal/web"
+	"github.com/jym/webook/internal/web/jwt"
 	"github.com/jym/webook/internal/web/middleware"
 	"strings"
 	"time"
@@ -17,7 +18,7 @@ func InitGin(mdls []gin.HandlerFunc, hdl *web.UserHandler, oauth2WechatHdl *web.
 	return s
 }
 
-func InitMiddlewares() []gin.HandlerFunc {
+func InitMiddlewares(j jwt.Handler) []gin.HandlerFunc {
 	return []gin.HandlerFunc{
 		//ratelimit.NewBuilder(rdClient, time.Second, 100).Build(),
 		cors.New(cors.Config{
@@ -43,6 +44,6 @@ func InitMiddlewares() []gin.HandlerFunc {
 			},
 			// 用于缓存预检请求结果的最大时间（CORS中的Access-Control-Max-Age）
 			MaxAge: 12 * time.Hour,
-		}), middleware.NewLoginJWTMiddlewareBuilder().CheckLogin(),
+		}), middleware.NewLoginJWTMiddlewareBuilder(j).CheckLogin(),
 	}
 }

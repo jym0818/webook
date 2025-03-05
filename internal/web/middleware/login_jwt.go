@@ -1,21 +1,19 @@
 package middleware
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/jym/webook/internal/web"
-	"github.com/redis/go-redis/v9"
+	ijwt "github.com/jym/webook/internal/web/jwt"
 	"net/http"
 )
 
 type LoginJWTMiddlewareBuilder struct {
-	cmd redis.Cmdable
+	ijwt.Handler
 }
 
-func NewLoginJWTMiddlewareBuilder(cmd redis.Cmdable) *LoginJWTMiddlewareBuilder {
+func NewLoginJWTMiddlewareBuilder(j ijwt.Handler) *LoginJWTMiddlewareBuilder {
 	return &LoginJWTMiddlewareBuilder{
-		cmd: cmd,
+		Handler: j,
 	}
 }
 
@@ -29,10 +27,10 @@ func (l *LoginJWTMiddlewareBuilder) CheckLogin() gin.HandlerFunc {
 		}
 
 		//JWT token
-		tokenStr := web.ExtractToken(c)
-		claims := &web.UserClaims{}
+		tokenStr := l.ExtractToken(c)
+		claims := &ijwt.UserClaims{}
 		t, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
-			return []byte("sDKU8mor4FhrCDsFmmMYifqYb8u2X4c7"), nil
+			return ijwt.ATKey, nil
 		})
 
 		if err != nil {
@@ -61,8 +59,8 @@ func (l *LoginJWTMiddlewareBuilder) CheckLogin() gin.HandlerFunc {
 		}
 
 		//验证是否退出
-		cnt, err := l.cmd.Exists(c, fmt.Sprintf("users:ssid:%s", claims.Ssid)).Result()
-		if err != nil || cnt > 0 {
+		err = l.CheckSession(c, claims.Ssid)
+		if err != nil {
 			//要么redis有问题，要么token退出登录了
 			c.AbortWithStatus(http.StatusUnauthorized)
 			return

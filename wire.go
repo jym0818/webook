@@ -10,6 +10,7 @@ import (
 	"github.com/jym/webook/internal/repository/dao"
 	"github.com/jym/webook/internal/service"
 	"github.com/jym/webook/internal/web"
+	"github.com/jym/webook/internal/web/jwt"
 	"github.com/jym/webook/ioc"
 )
 
@@ -25,6 +26,7 @@ func InitWebServer() *gin.Engine {
 		//组装gin.Default 和中间件
 		ioc.InitGin,
 		ioc.InitMiddlewares,
+		jwt.NewRedisJWTHandler,
 	)
 	return new(gin.Engine)
 }
