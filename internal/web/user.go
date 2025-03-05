@@ -66,7 +66,7 @@ func (u *UserHandler) LogoutJWT(c *gin.Context) {
 		return
 	}
 	//过期时间与长token相同
-	err := u.cmd.Set(c, fmt.Sprintf("users:ssod:%s", claimsValue.Ssid), "", time.Hour*24*7).Err()
+	err := u.cmd.Set(c, fmt.Sprintf("users:ssid:%s", claimsValue.Ssid), "", time.Hour*24*7).Err()
 	if err != nil {
 		c.JSON(http.StatusOK, Result{
 			Msg: "系统错误",
@@ -310,7 +310,7 @@ func (u *UserHandler) RefreshToken(c *gin.Context) {
 		return
 	}
 
-	cnt, err := u.cmd.Exists(c, fmt.Sprintf("users:ssod:%s", rc.Ssid)).Result()
+	cnt, err := u.cmd.Exists(c, fmt.Sprintf("users:ssid:%s", rc.Ssid)).Result()
 	if err != nil || cnt > 0 {
 		//要么redis有问题，要么token退出登录了
 		c.AbortWithStatus(http.StatusUnauthorized)

@@ -61,7 +61,7 @@ func (l *LoginJWTMiddlewareBuilder) CheckLogin() gin.HandlerFunc {
 		}
 
 		//验证是否退出
-		cnt, err := l.cmd.Exists(c, fmt.Sprintf("users:ssod:%s", claims.Ssid)).Result()
+		cnt, err := l.cmd.Exists(c, fmt.Sprintf("users:ssid:%s", claims.Ssid)).Result()
 		if err != nil || cnt > 0 {
 			//要么redis有问题，要么token退出登录了
 			c.AbortWithStatus(http.StatusUnauthorized)
