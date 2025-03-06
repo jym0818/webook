@@ -26,6 +26,7 @@ func InitWebServer() *gin.Engine {
 		//组装gin.Default 和中间件
 		ioc.InitGin,
 		ioc.InitMiddlewares,
+		ioc.InitLogger,
 		jwt.NewRedisJWTHandler,
 	)
 	return new(gin.Engine)

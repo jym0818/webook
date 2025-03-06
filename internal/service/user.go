@@ -5,7 +5,7 @@ import (
 	"errors"
 	"github.com/jym/webook/internal/domain"
 	"github.com/jym/webook/internal/repository"
-	"go.uber.org/zap"
+	"github.com/jym/webook/pkg/logger"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -21,10 +21,11 @@ type UserService interface {
 }
 type userService struct {
 	repo repository.UserRepository
+	l    logger.LoggerV1
 }
 
-func NewUserService(repo repository.UserRepository) UserService {
-	return &userService{repo: repo}
+func NewUserService(repo repository.UserRepository, l logger.LoggerV1) UserService {
+	return &userService{repo: repo, l: l}
 }
 
 func (svc *userService) SignUp(ctx context.Context, u domain.User) error {
@@ -75,8 +76,10 @@ func (svc *userService) FindOrCreate(ctx context.Context, phone string) (domain.
 	//if c.Get("jiangji") == true {
 	//	return domain.User{}, err
 	//}
+
 	//可以考虑将phone脱敏打出来
-	zap.L().Info("用户未注册", zap.String("phone", phone))
+	svc.l.Info("用户未注册", logger.String("phone", phone))
+
 	u = domain.User{Phone: phone}
 	err = svc.repo.Create(ctx, u)
 	if err != nil && err != repository.ErrUserDuplicate {
