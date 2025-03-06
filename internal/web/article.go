@@ -30,6 +30,7 @@ func (h *ArticleHandler) RegisterRouters(s *gin.Engine) {
 
 func (h *ArticleHandler) Edit(c *gin.Context) {
 	type Req struct {
+		Id      int64  `json:"id"`
 		Title   string `json:"title"`
 		Content string `json:"content"`
 	}
@@ -48,6 +49,7 @@ func (h *ArticleHandler) Edit(c *gin.Context) {
 
 	//调用service
 	id, err := h.svc.Save(c, domain.Article{
+		Id:      req.Id,
 		Title:   req.Title,
 		Content: req.Content,
 		Author: domain.Author{

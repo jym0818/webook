@@ -8,6 +8,7 @@ import (
 
 type ArticleDAO interface {
 	Insert(ctx context.Context, art Article) (int64, error)
+	UpdateById(ctx context.Context, article Article) error
 }
 
 type GORMArticleDAO struct {
@@ -24,8 +25,21 @@ func (dao *GORMArticleDAO) Insert(ctx context.Context, art Article) (int64, erro
 	now := time.Now().UnixMilli()
 	art.Ctime = now
 	art.Utime = now
-	err := dao.db.Create(&art).Error
+	err := dao.db.WithContext(ctx).Create(&art).Error
 	return art.Id, err
+}
+
+func (dao *GORMArticleDAO) UpdateById(ctx context.Context, art Article) error {
+	now := time.Now().UnixMilli()
+	art.Utime = now
+	//建议使用这种方法，而不是使用零值忽略
+	err := dao.db.WithContext(ctx).Model(&art).
+		Where("id = ?", art.Id).Updates(map[string]interface{}{
+		"title":   art.Title,
+		"content": art.Content,
+		"utime":   art.Utime,
+	}).Error
+	return err
 }
 
 type Article struct {
