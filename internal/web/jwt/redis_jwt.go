@@ -85,8 +85,18 @@ func (h *RedisJWTHandler) ClearToken(c *gin.Context) error {
 }
 
 func (h *RedisJWTHandler) CheckSession(c *gin.Context, ssid string) error {
-	_, err := h.cmd.Exists(c, fmt.Sprintf("users:ssid:%s", ssid)).Result()
-	return err
+	val, err := h.cmd.Exists(c, fmt.Sprintf("users:ssid:%s", ssid)).Result()
+	switch err {
+	case redis.Nil:
+		return nil
+	case nil:
+		if val == 0 {
+			return nil
+		}
+		return errors.New("session已经失效了")
+	default:
+		return err
+	}
 
 }
 

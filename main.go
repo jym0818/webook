@@ -4,11 +4,13 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 	"net/http"
 )
 
 func main() {
-	initViperRemote()
+	initViper()
+	initLogger()
 	s := InitWebServer()
 	s.GET("/hello", func(c *gin.Context) {
 		c.String(http.StatusOK, "hello world")
@@ -63,4 +65,15 @@ func initViperV2() {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func initLogger() {
+	logger, err := zap.NewDevelopment()
+	if err != nil {
+		panic(err)
+	}
+	//这样就全局可用了
+	//可以在任意地方直接zap.L().Error()
+	zap.ReplaceGlobals(logger)
+
 }

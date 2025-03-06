@@ -9,6 +9,7 @@ import (
 	"github.com/jym/webook/internal/service"
 	ijwt "github.com/jym/webook/internal/web/jwt"
 	"github.com/redis/go-redis/v9"
+	"go.uber.org/zap"
 	"net/http"
 )
 
@@ -94,6 +95,10 @@ func (u *UserHandler) LoginSMS(c *gin.Context) {
 			Code: 501001,
 			Msg:  "系统错误",
 		})
+		//这里面的错误 同意给前端返回的是系统错误，但是实际发生的错误我们不会返回
+		//那我们需要知道具体发生了什么错误，所以要记录在日志上
+		zap.L().Error("校验验证码出错:", zap.Error(err))
+		//zap.L().Error("校验验证码出错:", zap.Error(err), zap.Int64("id", 123), zap.Any("一个结构体"))
 		return
 	}
 	if !ok {

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/jym/webook/internal/domain"
 	"github.com/jym/webook/internal/repository"
+	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -74,6 +75,8 @@ func (svc *userService) FindOrCreate(ctx context.Context, phone string) (domain.
 	//if c.Get("jiangji") == true {
 	//	return domain.User{}, err
 	//}
+	//可以考虑将phone脱敏打出来
+	zap.L().Info("用户未注册", zap.String("phone", phone))
 	u = domain.User{Phone: phone}
 	err = svc.repo.Create(ctx, u)
 	if err != nil && err != repository.ErrUserDuplicate {
