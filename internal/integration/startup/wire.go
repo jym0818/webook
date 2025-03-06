@@ -1,6 +1,6 @@
 //go:build wireinject
 
-package main
+package startup
 
 import (
 	"github.com/gin-gonic/gin"
@@ -14,10 +14,12 @@ import (
 	"github.com/jym/webook/ioc"
 )
 
+var thirdProvider = wire.NewSet(InitRedis, InitDB, InitLogger)
+
 func InitWebServer() *gin.Engine {
 	wire.Build(
 		ioc.InitDB, ioc.InitRedis,
-		dao.NewUserDAO, cache.NewCodeCache, cache.NewUserCache,
+		dao.NewUserDAO, cache.NewCodeCache, cache.NewUserCache, dao.NewGORMArticleDAO,
 		repository.NewUserReposity, repository.NewCodeRepository, repository.NewCachedArticleRepository,
 		service.NewUserService, service.NewCodeService, service.NewArticleService,
 		ioc.InitSMSService, ioc.InitOAuth2WechatService, ioc.NewWechatHandler,
@@ -33,4 +35,7 @@ func InitWebServer() *gin.Engine {
 	return new(gin.Engine)
 }
 
-//实际上我们使用的wire生成代码中的InitWebServer方法，wire.go会被忽略
+func InitArticleHandler() *web.ArticleHandler {
+	wire.Build(thirdProvider, service.NewArticleService, web.NewArticleHandler, repository.NewCachedArticleRepository, dao.NewGORMArticleDAO)
+	return &web.ArticleHandler{}
+}
