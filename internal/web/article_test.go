@@ -3,6 +3,7 @@ package web
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/jym/webook/internal/domain"
 	"github.com/jym/webook/internal/service"
@@ -49,6 +50,32 @@ func TestArticleHandler_Publish(t *testing.T) {
 						Id: 123,
 					},
 				}).Return(int64(1), nil)
+				return svc
+			},
+		},
+		{
+			name: "publish失败",
+			reqBody: `
+{
+	"title":"我的标题",
+	"content": "我的内容"
+}
+`,
+			wantCode: http.StatusOK,
+			wantRes: Result{
+				//强制指定为float64
+				Code: 5,
+				Msg:  "系统错误",
+			},
+			mock: func(ctrl *gomock.Controller) service.ArticleService {
+				svc := svcmocks.NewMockArticleService(ctrl)
+				svc.EXPECT().Publish(gomock.Any(), domain.Article{
+					Title:   "我的标题",
+					Content: "我的内容",
+					Author: domain.Author{
+						Id: 123,
+					},
+				}).Return(int64(0), errors.New("publish失败"))
 				return svc
 			},
 		},
