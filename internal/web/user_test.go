@@ -173,7 +173,7 @@ func TestUserHandler_Signup(t *testing.T) {
 			defer ctrl.Finish()
 			server := gin.Default()
 			//用不上codeService
-			h := NewUserHandler(tc.mock(ctrl), nil)
+			h := NewUserHandler(tc.mock(ctrl), nil, nil, nil)
 			h.RegisterRouters(server)
 			//构造请求
 			req, err := http.NewRequest(http.MethodPost, "http://127.0.0.1:8080/users/signup", bytes.NewBuffer([]byte(tc.reqBody)))
