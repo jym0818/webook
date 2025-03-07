@@ -2,6 +2,7 @@ package dao
 
 import (
 	"context"
+	"fmt"
 	"gorm.io/gorm"
 	"time"
 )
@@ -33,13 +34,19 @@ func (dao *GORMArticleDAO) UpdateById(ctx context.Context, art Article) error {
 	now := time.Now().UnixMilli()
 	art.Utime = now
 	//建议使用这种方法，而不是使用零值忽略
-	err := dao.db.WithContext(ctx).Model(&art).
-		Where("id = ?", art.Id).Updates(map[string]interface{}{
+	res := dao.db.WithContext(ctx).Model(&art).
+		Where("id = ? AND author_id = ?", art.Id, art.AuthorId).Updates(map[string]interface{}{
 		"title":   art.Title,
 		"content": art.Content,
 		"utime":   art.Utime,
-	}).Error
-	return err
+	})
+	if res.Error != nil {
+		return res.Error
+	}
+	if res.RowsAffected == 0 {
+		return fmt.Errorf("更新失败，可能是创作者非法id = %d", art.Id)
+	}
+	return nil
 }
 
 type Article struct {

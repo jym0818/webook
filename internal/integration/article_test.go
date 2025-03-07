@@ -141,6 +141,50 @@ func (s *ArticleTestSuite) TestEdit() {
 				Msg:  "ok",
 			},
 		},
+		{
+			name: "修改别人的帖子",
+			before: func(t *testing.T) {
+				//准备数据--在数据库插入一条数据
+				err := s.db.Create(dao.Article{
+					Id:      3,
+					Title:   "我的标题",
+					Content: "我的内容",
+					//测试模拟的用户是123，这里是789，意味者在修改别人的数据
+					AuthorId: 789,
+					Ctime:    123,
+					Utime:    234,
+				}).Error
+				assert.NoError(t, err)
+
+			},
+			after: func(t *testing.T) {
+				var art dao.Article
+				err := s.db.Where("id=?", 3).First(&art).Error
+
+				assert.NoError(t, err)
+
+				assert.Equal(t, dao.Article{
+					//修改不能成功  所有的数据不变
+					Id:       3,
+					Title:    "我的标题",
+					Content:  "我的内容",
+					AuthorId: 789,
+					Ctime:    123,
+					Utime:    234,
+				}, art)
+
+			},
+			art: Article{
+				Id:      3,
+				Title:   "新的标题",
+				Content: "新的内容",
+			},
+			wantCode: http.StatusOK,
+			wantRes: Result[int64]{
+				Code: 5,
+				Msg:  "系统错误",
+			},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
