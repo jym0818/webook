@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
 	"github.com/jym/webook/internal/repository"
+	"github.com/jym/webook/internal/repository/article"
 	"github.com/jym/webook/internal/repository/cache"
 	"github.com/jym/webook/internal/repository/dao"
 	"github.com/jym/webook/internal/service"
@@ -18,7 +19,7 @@ func InitWebServer() *gin.Engine {
 	wire.Build(
 		ioc.InitDB, ioc.InitRedis,
 		dao.NewUserDAO, cache.NewCodeCache, cache.NewUserCache,
-		repository.NewUserReposity, repository.NewCodeRepository, repository.NewCachedArticleRepository,
+		repository.NewUserReposity, repository.NewCodeRepository, article.NewCachedArticleRepository,
 		service.NewUserService, service.NewCodeService, service.NewArticleService,
 		ioc.InitSMSService, ioc.InitOAuth2WechatService, ioc.NewWechatHandler,
 		web.NewUserHandler,
