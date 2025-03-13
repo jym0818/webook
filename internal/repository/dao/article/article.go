@@ -4,12 +4,15 @@ import (
 	"context"
 	"fmt"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"time"
 )
 
 type ArticleDAO interface {
 	Insert(ctx context.Context, art Article) (int64, error)
 	UpdateById(ctx context.Context, article Article) error
+	Sync(ctx context.Context, art Article) (int64, error)
+	Upsert(ctx context.Context, art PublishArticle) error
 }
 
 type GORMArticleDAO struct {
@@ -47,6 +50,55 @@ func (dao *GORMArticleDAO) UpdateById(ctx context.Context, art Article) error {
 		return fmt.Errorf("更新失败，可能是创作者非法id = %d", art.Id)
 	}
 	return nil
+}
+
+func (dao *GORMArticleDAO) Sync(ctx context.Context, art Article) (int64, error) {
+	//先操作制作表  再操作 线上表  同一个库
+	//采用闭包的形式
+	//gorm帮我们处理事务的生命周期 不需要操心commit或者rollback
+	//注意一条sql预计不需要开启事务
+	var (
+		id  = art.Id
+		err error
+	)
+	err = dao.db.Transaction(func(tx *gorm.DB) error {
+		var err error
+		txDAO := NewGORMArticleDAO(tx)
+		if id > 0 {
+			err = txDAO.UpdateById(ctx, art)
+		} else {
+			id, err = txDAO.Insert(ctx, art)
+		}
+		if err != nil {
+			return err
+		}
+		//操作线上库
+		return txDAO.Upsert(ctx, PublishArticle{Article: art})
+	})
+	return id, err
+}
+
+func (dao *GORMArticleDAO) Upsert(ctx context.Context, art PublishArticle) error {
+	now := time.Now().UnixMilli()
+	art.Ctime = now
+	art.Utime = now
+	//OnConflict的意思是数据冲突了
+	err := dao.db.WithContext(ctx).Clauses(clause.OnConflict{
+		//哪些列冲突
+		//Columns: []clause.Column{{Name: "id"}},
+		//意思是数据冲突了 什么也不干
+		//DoNothing: true,
+		//数据冲突了并且符合where条件就会触发
+		//Where: clause.Where{}
+		DoUpdates: clause.Assignments(map[string]interface{}{
+			"title":   art.Title,
+			"content": art.Content,
+			"utime":   art.Utime,
+		}),
+	}).Create(&art).Error
+	//最终的语句是
+	//INSERT  xxx ON DUPLICATE KEY UPDATE xxx
+	return err
 }
 
 type Article struct {
