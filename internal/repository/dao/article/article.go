@@ -2,7 +2,9 @@ package article
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"github.com/jym/webook/internal/domain"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"time"
@@ -13,10 +15,43 @@ type ArticleDAO interface {
 	UpdateById(ctx context.Context, article Article) error
 	Sync(ctx context.Context, art Article) (int64, error)
 	Upsert(ctx context.Context, art PublishArticle) error
+	SyncStatus(ctx context.Context, id int64, uid int64, status uint8) error
 }
 
 type GORMArticleDAO struct {
 	db *gorm.DB
+}
+
+func (dao *GORMArticleDAO) SyncStatus(ctx context.Context, id int64, uid int64, status uint8) error {
+	now := time.Now().UnixMilli()
+	err := dao.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		res := tx.Model(&Article{}).Where("id = ? AND author_id = ?", id, uid).
+			Updates(map[string]interface{}{
+				"status": status,
+				"utime":  now,
+			})
+		if res.Error != nil {
+			return res.Error
+		}
+		if res.RowsAffected == 0 {
+			return fmt.Errorf("更新失败，可能是创作者非法id = %d", id)
+		}
+		res = tx.Model(&PublishArticle{}).Where("id = ? AND author_id = ?", id, uid).
+			Updates(map[string]interface{}{
+				"status": status,
+				"utime":  now,
+			})
+
+		if res.Error != nil {
+			return res.Error
+		}
+		if res.RowsAffected == 0 {
+			return fmt.Errorf("更新失败，可能是创作者非法id = %d", id)
+		}
+		return nil
+
+	})
+	return err
 }
 
 func NewGORMArticleDAO(db *gorm.DB) ArticleDAO {

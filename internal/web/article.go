@@ -27,6 +27,33 @@ func (h *ArticleHandler) RegisterRouters(s *gin.Engine) {
 	g := s.Group("/articles")
 	g.POST("/edit", h.Edit)
 	g.POST("/publish", h.Publish)
+	g.POST("/withdraw", h.Withdraw)
+}
+
+func (h *ArticleHandler) Withdraw(c *gin.Context) {
+	type Req struct {
+		Id int64 `json:"id"`
+	}
+	var req Req
+	if err := c.Bind(&req); err != nil {
+		c.JSON(200, Result{
+			Code: 5,
+			Msg:  "系统错误",
+		})
+	}
+	claims := c.MustGet("claims").(ijwt.UserClaims)
+	err := h.svc.Withdraw(c, domain.Article{Id: req.Id, Author: domain.Author{Id: claims.Uid}})
+	if err != nil {
+		c.JSON(200, Result{
+			Code: 5,
+			Msg:  "系统错误",
+		})
+		h.l.Error("修改状态失败", logger.Error(err))
+		return
+	}
+	c.JSON(200, Result{
+		Msg: "ok",
+	})
 }
 
 func (h *ArticleHandler) Publish(c *gin.Context) {

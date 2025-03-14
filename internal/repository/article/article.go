@@ -11,10 +11,15 @@ type ArticleRepository interface {
 	Update(ctx context.Context, art domain.Article) error
 	//存储并同步数据
 	Sync(ctx context.Context, art domain.Article) (int64, error)
+	SyncStatus(ctx context.Context, id int64, uid int64, status domain.ArticleStatus) error
 }
 
 type CachedArticleRepository struct {
 	dao article.ArticleDAO
+}
+
+func (c *CachedArticleRepository) SyncStatus(ctx context.Context, id int64, uid int64, status domain.ArticleStatus) error {
+	return c.dao.SyncStatus(ctx, id, uid, status.ToUint8())
 }
 
 func NewCachedArticleRepository(dao article.ArticleDAO) ArticleRepository {
