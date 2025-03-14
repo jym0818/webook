@@ -94,6 +94,7 @@ func (dao *GORMArticleDAO) Upsert(ctx context.Context, art PublishArticle) error
 			"title":   art.Title,
 			"content": art.Content,
 			"utime":   art.Utime,
+			"status":  art.Status,
 		}),
 	}).Create(&art).Error
 	//最终的语句是
@@ -118,4 +119,8 @@ type Article struct {
 	AuthorId int64  `gorm:"index"`
 	Ctime    int64
 	Utime    int64
+	//有些人考虑到经常需要状态查询，会建立联合索引
+	//但是id= ？ AND status = ？ 实际上没有必要
+	//所以需要综合考虑，一般不需要
+	Status uint8
 }

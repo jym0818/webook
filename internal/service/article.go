@@ -36,6 +36,7 @@ func NewArticleServiceV1(author article.ArticleAuthorRepository, reader article.
 }
 
 func (a *articleService) Save(ctx context.Context, art domain.Article) (int64, error) {
+	art.Status = domain.ArticleStatusUnPublished
 	//如果有id  说明是修改   创建和修改共用一个接口
 	if art.Id > 0 {
 		err := a.repo.Update(ctx, art)

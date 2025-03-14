@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"github.com/gin-gonic/gin"
+	"github.com/jym/webook/internal/domain"
 	"github.com/jym/webook/internal/integration/startup"
 	"github.com/jym/webook/internal/repository/dao/article"
 	ijwt "github.com/jym/webook/internal/web/jwt"
@@ -84,6 +85,7 @@ func (s *ArticleTestSuite) TestEdit() {
 					Title:    "我的标题",
 					Content:  "我的内容",
 					AuthorId: 123,
+					Status:   domain.ArticleStatusUnPublished.ToUint8(),
 				}, art)
 
 			},
@@ -108,8 +110,9 @@ func (s *ArticleTestSuite) TestEdit() {
 					AuthorId: 123,
 					//跟时间有关的测试，不是逼不得已 不要用time.Now()
 					//因为time.Now()每次运行都不一样
-					Ctime: 123,
-					Utime: 234,
+					Ctime:  123,
+					Utime:  234,
+					Status: domain.ArticleStatusPublished.ToUint8(),
 				}).Error
 				assert.NoError(t, err)
 			},
@@ -127,6 +130,7 @@ func (s *ArticleTestSuite) TestEdit() {
 					Content:  "新的内容",
 					AuthorId: 123,
 					Ctime:    123,
+					Status:   domain.ArticleStatusUnPublished.ToUint8(),
 				}, art)
 
 			},
@@ -153,6 +157,7 @@ func (s *ArticleTestSuite) TestEdit() {
 					AuthorId: 789,
 					Ctime:    123,
 					Utime:    234,
+					Status:   domain.ArticleStatusPublished.ToUint8(),
 				}).Error
 				assert.NoError(t, err)
 
@@ -171,6 +176,7 @@ func (s *ArticleTestSuite) TestEdit() {
 					AuthorId: 789,
 					Ctime:    123,
 					Utime:    234,
+					Status:   domain.ArticleStatusUnPublished.ToUint8(),
 				}, art)
 
 			},
