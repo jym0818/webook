@@ -42,6 +42,7 @@ func (dao *GORMArticleDAO) UpdateById(ctx context.Context, art Article) error {
 		"title":   art.Title,
 		"content": art.Content,
 		"utime":   art.Utime,
+		"status":  art.Status,
 	})
 	if res.Error != nil {
 		return res.Error

@@ -29,6 +29,7 @@ func (c *CachedArticleRepository) toEntity(article2 domain.Article) article.Arti
 		Title:    article2.Title,
 		Content:  article2.Content,
 		AuthorId: article2.Author.Id,
+		Status:   article2.Status.ToUint8(),
 	}
 }
 
