@@ -3,6 +3,7 @@ package article
 import (
 	"context"
 	"github.com/jym/webook/internal/domain"
+	"github.com/jym/webook/internal/repository/cache"
 	"github.com/jym/webook/internal/repository/dao/article"
 	"time"
 )
@@ -17,10 +18,20 @@ type ArticleRepository interface {
 }
 
 type CachedArticleRepository struct {
-	dao article.ArticleDAO
+	dao   article.ArticleDAO
+	cache cache.CacheArticle
 }
 
 func (c *CachedArticleRepository) List(ctx context.Context, uid int64, limit int, offset int) ([]domain.Article, error) {
+	//先去缓存中查找
+	if offset == 0 && limit <= 100 {
+		data, err := c.cache.GetFirstPage(ctx, uid)
+		if err == nil {
+			return data[:limit], nil
+		}
+	}
+
+	//再去数据库
 	res, err := c.dao.GetByAuthor(ctx, uid, limit, offset)
 	if err != nil {
 		return nil, err
@@ -39,6 +50,13 @@ func (c *CachedArticleRepository) List(ctx context.Context, uid int64, limit int
 			Status: domain.ArticleStatus(v.Status),
 		})
 	}
+	//回写缓存.也可以异步
+	//使用set
+	err = c.cache.SetFirstPage(ctx, uid, arts)
+	if err != nil {
+		//记录日志
+		//可以接受缓存失败
+	}
 	return arts, nil
 }
 
@@ -46,9 +64,10 @@ func (c *CachedArticleRepository) SyncStatus(ctx context.Context, id int64, uid 
 	return c.dao.SyncStatus(ctx, id, uid, status.ToUint8())
 }
 
-func NewCachedArticleRepository(dao article.ArticleDAO) ArticleRepository {
+func NewCachedArticleRepository(dao article.ArticleDAO, cache cache.CacheArticle) ArticleRepository {
 	return &CachedArticleRepository{
-		dao: dao,
+		dao:   dao,
+		cache: cache,
 	}
 }
 
@@ -63,10 +82,18 @@ func (c *CachedArticleRepository) toEntity(article2 domain.Article) article.Arti
 }
 
 func (c *CachedArticleRepository) Sync(ctx context.Context, art domain.Article) (int64, error) {
+	defer func() {
+		//清空缓存
+		c.cache.DelFirstPage(ctx, art.Author.Id)
+	}()
 	return c.dao.Sync(ctx, c.toEntity(art))
 }
 
 func (c *CachedArticleRepository) Create(ctx context.Context, art domain.Article) (int64, error) {
+	defer func() {
+		//清空缓存
+		c.cache.DelFirstPage(ctx, art.Author.Id)
+	}()
 	return c.dao.Insert(ctx, article.Article{
 		Title:    art.Title,
 		Content:  art.Content,
@@ -76,6 +103,10 @@ func (c *CachedArticleRepository) Create(ctx context.Context, art domain.Article
 }
 
 func (c *CachedArticleRepository) Update(ctx context.Context, art domain.Article) error {
+	defer func() {
+		//清空缓存
+		c.cache.DelFirstPage(ctx, art.Author.Id)
+	}()
 	return c.dao.UpdateById(ctx, article.Article{
 		Id:       art.Id,
 		Title:    art.Title,
