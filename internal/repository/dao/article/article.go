@@ -14,10 +14,20 @@ type ArticleDAO interface {
 	Sync(ctx context.Context, art Article) (int64, error)
 	Upsert(ctx context.Context, art PublishArticle) error
 	SyncStatus(ctx context.Context, id int64, uid int64, status uint8) error
+	GetByAuthor(ctx context.Context, uid int64, limit int, offset int) ([]Article, error)
 }
 
 type GORMArticleDAO struct {
 	db *gorm.DB
+}
+
+func (dao *GORMArticleDAO) GetByAuthor(ctx context.Context, uid int64, limit int, offset int) ([]Article, error) {
+	var arts []Article
+	//注意设计索引的时候最好让order by命中索引
+	//author_id和utime联合索引
+	err := dao.db.WithContext(ctx).Model(&Article{}).Where("author_id = ?", uid).Offset(offset).Limit(limit).
+		Order("utime desc").Find(&arts).Error
+	return arts, err
 }
 
 func (dao *GORMArticleDAO) SyncStatus(ctx context.Context, id int64, uid int64, status uint8) error {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/jym/webook/internal/domain"
 	"github.com/jym/webook/internal/repository/dao/article"
+	"time"
 )
 
 type ArticleRepository interface {
@@ -12,10 +13,33 @@ type ArticleRepository interface {
 	//存储并同步数据
 	Sync(ctx context.Context, art domain.Article) (int64, error)
 	SyncStatus(ctx context.Context, id int64, uid int64, status domain.ArticleStatus) error
+	List(ctx context.Context, uid int64, limit int, offset int) ([]domain.Article, error)
 }
 
 type CachedArticleRepository struct {
 	dao article.ArticleDAO
+}
+
+func (c *CachedArticleRepository) List(ctx context.Context, uid int64, limit int, offset int) ([]domain.Article, error) {
+	res, err := c.dao.GetByAuthor(ctx, uid, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	var arts []domain.Article
+	for _, v := range res {
+		arts = append(arts, domain.Article{
+			Id:      v.Id,
+			Title:   v.Title,
+			Content: v.Content,
+			Author: domain.Author{
+				Id: v.AuthorId,
+			},
+			Ctime:  time.UnixMilli(v.Ctime),
+			Utime:  time.UnixMilli(v.Utime),
+			Status: domain.ArticleStatus(v.Status),
+		})
+	}
+	return arts, nil
 }
 
 func (c *CachedArticleRepository) SyncStatus(ctx context.Context, id int64, uid int64, status domain.ArticleStatus) error {
