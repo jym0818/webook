@@ -41,7 +41,7 @@ func (r *RedisCacheArticle) SetFirstPage(ctx context.Context, uid int64, res []d
 }
 
 func (r *RedisCacheArticle) key(uid int64) string {
-	fmt.Sprintf("article:first_page:%d", uid)
+	return fmt.Sprintf("article:first_page:%d", uid)
 }
 
 func (r *RedisCacheArticle) DelFirstPage(ctx context.Context, uid int64) error {
