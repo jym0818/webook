@@ -92,4 +92,5 @@ type User struct {
 	Utime         int64
 	WechatUnionID sql.NullString
 	WechatOpenID  sql.NullString `gorm:"unique"`
+	NickName      string
 }

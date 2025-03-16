@@ -3,6 +3,7 @@ package article
 import (
 	"context"
 	"github.com/jym/webook/internal/domain"
+	"github.com/jym/webook/internal/repository"
 	"github.com/jym/webook/internal/repository/cache"
 	"github.com/jym/webook/internal/repository/dao/article"
 	"time"
@@ -16,11 +17,38 @@ type ArticleRepository interface {
 	SyncStatus(ctx context.Context, id int64, uid int64, status domain.ArticleStatus) error
 	List(ctx context.Context, uid int64, limit int, offset int) ([]domain.Article, error)
 	GetById(ctx context.Context, id int64) (domain.Article, error)
+	GetPublishedById(ctx context.Context, id int64) (domain.Article, error)
 }
 
 type CachedArticleRepository struct {
-	dao   article.ArticleDAO
-	cache cache.CacheArticle
+	dao      article.ArticleDAO
+	cache    cache.CacheArticle
+	userRepo repository.UserRepository
+}
+
+func (c *CachedArticleRepository) GetPublishedById(ctx context.Context, id int64) (domain.Article, error) {
+	//如果content在oss上面，你就要让前端去oss读取，实际上前端就是拼了一个url，放到页面上
+	art, err := c.dao.GetPubById(ctx, id)
+	if err != nil {
+		return domain.Article{}, err
+	}
+	//你在这边要组装user  为什么？  因为你的Article表没有author_name，虽然我们的domain中有author_name,这也是领域对象和数据库对象的区别
+	//只能引入userRepository,而不是引入userDAO
+	usr, err := c.userRepo.FindById(ctx, art.AuthorId)
+	if err != nil {
+		return domain.Article{}, err
+	}
+	res := domain.Article{
+		Id:      art.Id,
+		Title:   art.Title,
+		Status:  domain.ArticleStatus(art.Status),
+		Content: art.Content,
+		Author: domain.Author{
+			Id:   usr.Id,
+			Name: usr.NickName,
+		},
+	}
+	return res, nil
 }
 
 func (c *CachedArticleRepository) GetById(ctx context.Context, id int64) (domain.Article, error) {
@@ -97,11 +125,14 @@ func (c *CachedArticleRepository) toEntity(article2 domain.Article) article.Arti
 }
 
 func (c *CachedArticleRepository) Sync(ctx context.Context, art domain.Article) (int64, error) {
-	defer func() {
-		//清空缓存
+
+	id, err := c.dao.Sync(ctx, c.toEntity(art))
+	if err == nil {
 		c.cache.DelFirstPage(ctx, art.Author.Id)
-	}()
-	return c.dao.Sync(ctx, c.toEntity(art))
+		//缓存发布的文章，提前缓存好线上库
+		c.cache.SetPub(ctx, art)
+	}
+	return id, err
 }
 
 func (c *CachedArticleRepository) Create(ctx context.Context, art domain.Article) (int64, error) {

@@ -14,9 +14,15 @@ type CacheArticle interface {
 	SetFirstPage(ctx context.Context, uid int64, res []domain.Article) error
 	DelFirstPage(ctx context.Context, uid int64) error
 	Set(ctx context.Context, article domain.Article) error
+	SetPub(ctx context.Context, art domain.Article) error
 }
 type RedisCacheArticle struct {
 	cmd redis.Cmdable
+}
+
+func (r *RedisCacheArticle) SetPub(ctx context.Context, art domain.Article) error {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (r *RedisCacheArticle) Set(ctx context.Context, article domain.Article) error {

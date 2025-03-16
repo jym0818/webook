@@ -16,10 +16,21 @@ type ArticleDAO interface {
 	SyncStatus(ctx context.Context, id int64, uid int64, status uint8) error
 	GetByAuthor(ctx context.Context, uid int64, limit int, offset int) ([]Article, error)
 	GetById(ctx context.Context, id int64) (Article, error)
+	GetPubById(ctx context.Context, id int64) (Article, error)
 }
 
 type GORMArticleDAO struct {
 	db *gorm.DB
+}
+
+func (dao *GORMArticleDAO) GetById(ctx context.Context, id int64) (Article, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (dao *GORMArticleDAO) GetPubById(ctx context.Context, id int64) (Article, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (dao *GORMArticleDAO) GetByAuthor(ctx context.Context, uid int64, limit int, offset int) ([]Article, error) {
