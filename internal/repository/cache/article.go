@@ -13,9 +13,23 @@ type CacheArticle interface {
 	GetFirstPage(ctx context.Context, uid int64) ([]domain.Article, error)
 	SetFirstPage(ctx context.Context, uid int64, res []domain.Article) error
 	DelFirstPage(ctx context.Context, uid int64) error
+	Set(ctx context.Context, article domain.Article) error
 }
 type RedisCacheArticle struct {
 	cmd redis.Cmdable
+}
+
+func (r *RedisCacheArticle) Set(ctx context.Context, article domain.Article) error {
+	data, err := json.Marshal(article)
+	if err != nil {
+		return err
+	}
+	//过期时间要短，你的预测效果越不好，时间越要短
+	return r.cmd.Set(ctx, r.firstKey(article.Id), data, time.Second*10).Err()
+}
+
+func (r *RedisCacheArticle) firstKey(id int64) string {
+	return fmt.Sprintf("article:%d", id)
 }
 
 func NewRedisCacheArticle(cmd redis.Cmdable) CacheArticle {

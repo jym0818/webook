@@ -36,6 +36,7 @@ func (c *CachedArticleRepository) List(ctx context.Context, uid int64, limit int
 	if offset == 0 && limit <= 100 {
 		data, err := c.cache.GetFirstPage(ctx, uid)
 		if err == nil {
+			c.preCache(ctx, data)
 			return data[:limit], nil
 		}
 	}
@@ -66,6 +67,11 @@ func (c *CachedArticleRepository) List(ctx context.Context, uid int64, limit int
 		//记录日志
 		//可以接受缓存失败
 	}
+	//缓存第一条数据
+	go func() {
+		c.preCache(ctx, arts)
+	}()
+
 	return arts, nil
 }
 
@@ -135,4 +141,15 @@ func (c *CachedArticleRepository) toDomain(art article.Article) domain.Article {
 			Id: art.AuthorId,
 		},
 	}
+}
+
+func (c *CachedArticleRepository) preCache(ctx context.Context, arts []domain.Article) {
+	//对于大对象，可以考虑不缓存
+	if len(arts) > 0 && len(arts[0].Content) < 1024*1024 {
+		err := c.cache.Set(ctx, arts[0])
+		if err != nil {
+			//记录日志
+		}
+	}
+
 }
