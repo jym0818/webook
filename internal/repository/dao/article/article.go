@@ -15,6 +15,7 @@ type ArticleDAO interface {
 	Upsert(ctx context.Context, art PublishArticle) error
 	SyncStatus(ctx context.Context, id int64, uid int64, status uint8) error
 	GetByAuthor(ctx context.Context, uid int64, limit int, offset int) ([]Article, error)
+	GetById(ctx context.Context, id int64) (Article, error)
 }
 
 type GORMArticleDAO struct {

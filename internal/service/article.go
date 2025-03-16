@@ -13,6 +13,7 @@ type ArticleService interface {
 	Withdraw(ctx context.Context, art domain.Article) error
 	PublishV1(ctx context.Context, art domain.Article) (int64, error)
 	List(c context.Context, uid int64, limit int, offset int) ([]domain.Article, error)
+	GetById(c context.Context, id int64) (domain.Article, error)
 }
 type articleService struct {
 	repo article.ArticleRepository
@@ -21,6 +22,10 @@ type articleService struct {
 	reader article.ArticleReaderRepository
 
 	l logger.LoggerV1
+}
+
+func (a *articleService) GetById(c context.Context, id int64) (domain.Article, error) {
+	return a.repo.GetById(c, id)
 }
 
 func (a *articleService) List(c context.Context, uid int64, limit int, offset int) ([]domain.Article, error) {

@@ -15,11 +15,20 @@ type ArticleRepository interface {
 	Sync(ctx context.Context, art domain.Article) (int64, error)
 	SyncStatus(ctx context.Context, id int64, uid int64, status domain.ArticleStatus) error
 	List(ctx context.Context, uid int64, limit int, offset int) ([]domain.Article, error)
+	GetById(ctx context.Context, id int64) (domain.Article, error)
 }
 
 type CachedArticleRepository struct {
 	dao   article.ArticleDAO
 	cache cache.CacheArticle
+}
+
+func (c *CachedArticleRepository) GetById(ctx context.Context, id int64) (domain.Article, error) {
+	res, err := c.dao.GetById(ctx, id)
+	if err != nil {
+		return domain.Article{}, err
+	}
+	return c.toDomain(res), nil
 }
 
 func (c *CachedArticleRepository) List(ctx context.Context, uid int64, limit int, offset int) ([]domain.Article, error) {
@@ -114,4 +123,16 @@ func (c *CachedArticleRepository) Update(ctx context.Context, art domain.Article
 		AuthorId: art.Author.Id,
 		Status:   art.Status.ToUint8(),
 	})
+}
+
+func (c *CachedArticleRepository) toDomain(art article.Article) domain.Article {
+	return domain.Article{
+		Id:      art.Id,
+		Title:   art.Title,
+		Status:  domain.ArticleStatus(art.Status),
+		Content: art.Content,
+		Author: domain.Author{
+			Id: art.AuthorId,
+		},
+	}
 }
