@@ -14,14 +14,18 @@ import (
 var _ handler = (*ArticleHandler)(nil)
 
 type ArticleHandler struct {
-	svc service.ArticleService
-	l   logger.LoggerV1
+	svc     service.ArticleService
+	l       logger.LoggerV1
+	intrSvc service.InteractiveService
+	biz     string
 }
 
-func NewArticleHandler(svc service.ArticleService, l logger.LoggerV1) *ArticleHandler {
+func NewArticleHandler(svc service.ArticleService, l logger.LoggerV1, intrSvc service.InteractiveService) *ArticleHandler {
 	return &ArticleHandler{
-		svc: svc,
-		l:   l,
+		svc:     svc,
+		l:       l,
+		intrSvc: intrSvc,
+		biz:     "article",
 	}
 }
 
@@ -236,6 +240,14 @@ func (h *ArticleHandler) PubDetail(c *gin.Context) {
 		h.l.Error("获得文章信息失败", logger.Error(err))
 		return
 	}
+	//增加计数  异步处理就可以了
+	go func() {
+		er := h.intrSvc.IncrReadCnt(c, h.biz, art.Id)
+		if er != nil {
+			h.l.Error("增加阅读计数失败", logger.Error(err), logger.Int64("aid", art.Id))
+		}
+	}()
+
 	c.JSON(http.StatusOK, Result{
 		Data: ArticleVo{
 			Id:      art.Id,

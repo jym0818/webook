@@ -24,6 +24,7 @@ type CachedArticleRepository struct {
 	dao      article.ArticleDAO
 	cache    cache.CacheArticle
 	userRepo repository.UserRepository
+	intrSvc  service.InteractiveService
 }
 
 func (c *CachedArticleRepository) GetPublishedById(ctx context.Context, id int64) (domain.Article, error) {
@@ -38,6 +39,8 @@ func (c *CachedArticleRepository) GetPublishedById(ctx context.Context, id int64
 	if err != nil {
 		return domain.Article{}, err
 	}
+	//增加阅读计数
+
 	res := domain.Article{
 		Id:      art.Id,
 		Title:   art.Title,
@@ -107,10 +110,11 @@ func (c *CachedArticleRepository) SyncStatus(ctx context.Context, id int64, uid 
 	return c.dao.SyncStatus(ctx, id, uid, status.ToUint8())
 }
 
-func NewCachedArticleRepository(dao article.ArticleDAO, cache cache.CacheArticle) ArticleRepository {
+func NewCachedArticleRepository(dao article.ArticleDAO, cache cache.CacheArticle, intrSvc service.InteractiveService) ArticleRepository {
 	return &CachedArticleRepository{
-		dao:   dao,
-		cache: cache,
+		dao:     dao,
+		cache:   cache,
+		intrSvc: intrSvc,
 	}
 }
 

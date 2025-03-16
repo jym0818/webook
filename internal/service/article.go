@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"github.com/gin-gonic/gin"
 	"github.com/jym/webook/internal/domain"
 	"github.com/jym/webook/internal/repository/article"
 	"github.com/jym/webook/pkg/logger"
