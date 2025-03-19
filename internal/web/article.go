@@ -37,6 +37,8 @@ func (h *ArticleHandler) RegisterRouters(s *gin.Engine) {
 	g.POST("/list", h.List)
 	g.GET("/detail/:id", h.Detail)
 	g.GET("/pub/:id", h.PubDetail)
+	//点赞取消点赞用一个接口
+	g.POST("/pub/like", h.Like)
 }
 
 func (h *ArticleHandler) Withdraw(c *gin.Context) {
@@ -260,4 +262,40 @@ func (h *ArticleHandler) PubDetail(c *gin.Context) {
 			Utime:      art.Utime.Format(time.DateTime),
 		},
 	})
+}
+
+func (h *ArticleHandler) Like(c *gin.Context) {
+	var req LikeReq
+	if err := c.Bind(&req); err != nil {
+		return
+	}
+	//检测输入
+	user, _ := c.Get("claims")
+	claims, ok := user.(*ijwt.UserClaims)
+	if !ok {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		h.l.Error("未发现用户的session信息")
+		return
+	}
+	var err error
+	if req.Like {
+		err = h.intrSvc.Like(c, h.biz, req.Id, claims.Uid)
+	} else {
+		err = h.intrSvc.CancelLike(c, h.biz, req.Id, claims.Uid)
+	}
+
+	if err != nil {
+		c.JSON(200, Result{
+			Msg: "系统错误",
+		})
+		return
+	}
+	c.JSON(200, Result{
+		Msg: "ok",
+	})
+}
+
+type LikeReq struct {
+	Id   int64 `json:"id"`
+	Like bool  `json:"like"`
 }

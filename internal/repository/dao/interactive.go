@@ -65,8 +65,10 @@ func (dao *GORMInteractiveDAO) InsertCollectionBiz(ctx context.Context, cb UserC
 }
 
 func (dao *GORMInteractiveDAO) InsertLikeInfo(ctx context.Context, biz string, bizId, uid int64) error {
+	//记录点赞并同时增加点赞计数
 	now := time.Now().UnixMilli()
 	err := dao.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		//点赞过了 再次点赞  一般是前端的问题 我们不去鉴别
 		err := tx.Clauses(clause.OnConflict{
 			DoUpdates: clause.Assignments(map[string]any{
 				"status": 1,
@@ -186,11 +188,17 @@ type Interactive struct {
 type UserLikeBiz struct {
 	Id int64 `gorm:"primaryKey,autoIncrement"`
 	// 三个构成唯一索引
+	//联合索引顺序是什么？
+	//看场景？
+	//1.如果用户要看自己点赞的东西   那么UID在前
+	//where uid = ?
+
 	BizId int64  `gorm:"uniqueIndex:biz_type_id_uid"`
 	Biz   string `gorm:"type:varchar(128);uniqueIndex:biz_type_id_uid"`
 	Uid   int64  `gorm:"uniqueIndex:biz_type_id_uid"`
 	// 依旧是只在 DB 层面生效的状态
 	// 1- 有效，0-无效。软删除的用法
+	//取消点赞就修改为0，而不是去删除数据 如果频繁的取消点赞 去删除数据  会造成数据表空洞
 	Status uint8
 	Ctime  int64
 	Utime  int64
