@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/jym0818/webook/internal/domain"
 	"github.com/jym0818/webook/internal/repository"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type UserService interface {
@@ -23,5 +24,10 @@ func NewuserService(repo repository.UserRepository) UserService {
 }
 
 func (svc *userService) Signup(ctx context.Context, user domain.User) error {
+	hash, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	user.Password = string(hash)
 	return svc.repo.Create(ctx, user)
 }

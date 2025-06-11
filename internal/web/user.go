@@ -27,7 +27,8 @@ func NewUserHandler(svc service.UserService) *UserHandler {
 }
 
 func (h *UserHandler) RegisterRoutes(s *gin.Engine) {
-	s.POST("/signup", h.Signup)
+	g := s.Group("/user")
+	g.POST("/signup", h.Signup)
 }
 
 func (h *UserHandler) Signup(c *gin.Context) {

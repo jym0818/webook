@@ -41,7 +41,7 @@ func main() {
 		MaxAge: 12 * time.Hour,
 	}))
 	//依赖注入
-	db, err := gorm.Open(mysql.Open("root:root@tcp(localhost:13316)/webook"))
+	db, err := gorm.Open(mysql.Open("root:root@tcp(118.25.44.1:13316)/webook"))
 	if err != nil {
 		panic(err)
 	}
