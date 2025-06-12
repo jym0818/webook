@@ -39,8 +39,10 @@ func (h *UserHandler) Signup(c *gin.Context) {
 		RePassword string `json:"rePassword"`
 	}
 	var req Req
+	//Bind方法会根据Context-Type来解析你的数据到req中
+	//解析错了，会返回400错误
 	if err := c.Bind(&req); err != nil {
-		c.JSON(http.StatusOK, Result{Code: 500, Msg: "系统错误"})
+
 		return
 	}
 	//参数校验

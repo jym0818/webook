@@ -21,7 +21,7 @@ func main() {
 		// AllowOrigins: []string{"https://foo.com"},
 		// 允许的 HTTP 方法（CORS中的Access-Control-Allow-Methods）
 		//如果省略，那么所有方法都允许
-		AllowMethods: []string{"PUT", "PATCH"},
+		//AllowMethods: []string{"PUT", "PATCH"},
 		// 允许的 HTTP 头部（CORS中的Access-Control-Allow-Headers）
 		AllowHeaders: []string{"Origin"},
 		// 暴露的 HTTP 头部（CORS中的Access-Control-Expose-Headers）
