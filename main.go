@@ -9,9 +9,9 @@ import (
 	"github.com/jym0818/webook/internal/repository/dao"
 	"github.com/jym0818/webook/internal/service"
 	"github.com/jym0818/webook/internal/web"
+	"github.com/jym0818/webook/internal/web/middleware"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
-	"net/http"
 	"strings"
 	"time"
 )
@@ -49,17 +49,10 @@ func main() {
 	server.Use(sessions.Sessions("webook", store))
 
 	//检验登录状态
-	server.Use(func(c *gin.Context) {
-		if c.Request.URL.Path == "/user/login" || c.Request.URL.Path == "/user/signup" {
-			return
-		}
-		sess := sessions.Default(c)
-		if sess.Get("userId") == nil {
-			c.AbortWithStatus(http.StatusUnauthorized)
-			return
-		}
-
-	})
+	server.Use(middleware.NewLoginMiddlewareBuilder().
+		IgnorePath("/user/login").
+		IgnorePath("/user/signup").
+		Build())
 
 	//依赖注入
 	db, err := gorm.Open(mysql.Open("root:root@tcp(118.25.44.1:13316)/webook"))
