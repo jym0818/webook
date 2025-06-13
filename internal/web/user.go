@@ -32,6 +32,7 @@ func (h *UserHandler) RegisterRoutes(s *gin.Engine) {
 	g.POST("/signup", h.Signup)
 	g.POST("/login", h.Login)
 	g.POST("/profile", h.Profile)
+	g.POST("/logout", h.Logout)
 }
 
 func (h *UserHandler) Login(c *gin.Context) {
@@ -130,4 +131,13 @@ func (h *UserHandler) Profile(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, Result{Code: 200, Data: id})
 
+}
+
+func (h *UserHandler) Logout(c *gin.Context) {
+	sess := sessions.Default(c)
+	sess.Options(sessions.Options{
+		MaxAge: -1,
+	})
+	sess.Save()
+	c.JSON(http.StatusOK, Result{Code: 200, Msg: "退出登录成功"})
 }
