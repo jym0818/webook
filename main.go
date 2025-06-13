@@ -2,6 +2,8 @@ package main
 
 import (
 	"github.com/gin-contrib/cors"
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/jym0818/webook/internal/repository"
 	"github.com/jym0818/webook/internal/repository/dao"
@@ -9,6 +11,7 @@ import (
 	"github.com/jym0818/webook/internal/web"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"net/http"
 	"strings"
 	"time"
 )
@@ -40,6 +43,24 @@ func main() {
 		// 用于缓存预检请求结果的最大时间（CORS中的Access-Control-Max-Age）
 		MaxAge: 12 * time.Hour,
 	}))
+
+	store := cookie.NewStore([]byte("secret"))
+
+	server.Use(sessions.Sessions("webook", store))
+
+	//检验登录状态
+	server.Use(func(c *gin.Context) {
+		if c.Request.URL.Path == "/user/login" || c.Request.URL.Path == "/user/signup" {
+			return
+		}
+		sess := sessions.Default(c)
+		if sess.Get("userId") == nil {
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+
+	})
+
 	//依赖注入
 	db, err := gorm.Open(mysql.Open("root:root@tcp(118.25.44.1:13316)/webook"))
 	if err != nil {
