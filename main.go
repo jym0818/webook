@@ -8,6 +8,8 @@ import (
 	"github.com/jym0818/webook/internal/service"
 	"github.com/jym0818/webook/internal/web"
 	"github.com/jym0818/webook/internal/web/middleware"
+	"github.com/jym0818/webook/pkg/ginx/middlewares/ratelimit"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"strings"
@@ -41,6 +43,12 @@ func main() {
 		// 用于缓存预检请求结果的最大时间（CORS中的Access-Control-Max-Age）
 		MaxAge: 12 * time.Hour,
 	}))
+
+	cmd := redis.NewClient(&redis.Options{
+		Addr: "118.25.44.1:6379",
+	})
+	//限流
+	server.Use(ratelimit.NewBuilder(cmd, time.Second, 100).Build())
 
 	//检验登录状态
 	server.Use(middleware.NewLoginMiddlewareBuilder().
