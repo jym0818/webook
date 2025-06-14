@@ -4,9 +4,11 @@ import (
 	regexp "github.com/dlclark/regexp2"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/jym0818/webook/internal/domain"
 	"github.com/jym0818/webook/internal/service"
 	"net/http"
+	"time"
 )
 
 const emailRegexPattern = "^\\w+([-+.]\\w+)*@\\w+([-.]\\w+)*\\.\\w+([-.]\\w+)*$"
@@ -56,13 +58,18 @@ func (h *UserHandler) Login(c *gin.Context) {
 		return
 	}
 
-	sess := sessions.Default(c)
-	sess.Set("userId", user.Id)
-	err = sess.Save()
+	claims := UserClaims{
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 30)),
+		},
+		Uid: user.Id,
+	}
+	t := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
+	token, err := t.SignedString([]byte("sDKU8mor4FhrCDsFmmMYifqYb8u2X4c7"))
 	if err != nil {
 		c.JSON(http.StatusOK, Result{Code: 500, Msg: "系统错误"})
-		return
 	}
+	c.Header("x-jwt-token", token)
 	c.JSON(http.StatusOK, Result{Code: 200, Msg: "登录成功"})
 
 }
@@ -122,14 +129,8 @@ func (h *UserHandler) Signup(c *gin.Context) {
 }
 
 func (h *UserHandler) Profile(c *gin.Context) {
-	sess := sessions.Default(c)
-	userId := sess.Get("userId")
-	id, ok := userId.(int64)
-	if !ok {
-		c.JSON(http.StatusOK, Result{Code: 500, Msg: "系统错误"})
-		return
-	}
-	c.JSON(http.StatusOK, Result{Code: 200, Data: id})
+	claims := c.MustGet("claims").(*UserClaims)
+	c.JSON(http.StatusOK, Result{Data: claims.Uid})
 
 }
 
@@ -140,4 +141,9 @@ func (h *UserHandler) Logout(c *gin.Context) {
 	})
 	sess.Save()
 	c.JSON(http.StatusOK, Result{Code: 200, Msg: "退出登录成功"})
+}
+
+type UserClaims struct {
+	jwt.RegisteredClaims
+	Uid int64
 }

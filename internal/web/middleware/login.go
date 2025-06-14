@@ -1,9 +1,11 @@
 package middleware
 
 import (
-	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/jym0818/webook/internal/web"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -28,34 +30,40 @@ func (l *LoginMiddlewareBuilder) Build() gin.HandlerFunc {
 			}
 		}
 
-		sess := sessions.Default(ctx)
-
-		if sess.Get("userId") == nil {
+		h := ctx.GetHeader("Authorization")
+		if h == "" {
 			ctx.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
-		now := time.Now().UnixMilli()
-		sess.Set("userId", sess.Get("userId"))
-		updateTime := sess.Get("updateTime")
-		sess.Options(sessions.Options{
-			MaxAge: 1800,
+		segs := strings.Split(h, " ")
+		if len(segs) != 2 {
+			ctx.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+		t := segs[1]
+		claims := &web.UserClaims{}
+		token, err := jwt.ParseWithClaims(t, claims, func(token *jwt.Token) (interface{}, error) {
+			return []byte("sDKU8mor4FhrCDsFmmMYifqYb8u2X4c7"), nil
 		})
-
-		if updateTime == nil {
-			sess.Set("updateTime", now)
-			sess.Save()
+		if err != nil {
+			ctx.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
-
-		updateTimeVal, ok := updateTime.(int64)
-		if !ok {
-			ctx.AbortWithStatus(http.StatusInternalServerError)
+		if !token.Valid || claims.Uid == 0 || token == nil {
+			ctx.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
-		if now-updateTimeVal > 15*60 {
-			ctx.Set("updateTime", now)
-			sess.Save()
+		//刷新登录
+		if claims.ExpiresAt.Time.Sub(time.Now()) < time.Minute*15 {
+			claims.ExpiresAt = jwt.NewNumericDate(time.Now().Add(time.Minute * 30))
+			t, err = token.SignedString([]byte("sDKU8mor4FhrCDsFmmMYifqYb8u2X4c7"))
+			if err != nil {
+				//记录日志
+			}
+			ctx.Header("x-jwt-token", t)
 		}
+
+		ctx.Set("claims", claims)
 
 	}
 }

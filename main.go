@@ -2,8 +2,6 @@ package main
 
 import (
 	"github.com/gin-contrib/cors"
-	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/jym0818/webook/internal/repository"
 	"github.com/jym0818/webook/internal/repository/dao"
@@ -28,7 +26,7 @@ func main() {
 		// 允许的 HTTP 头部（CORS中的Access-Control-Allow-Headers）
 		AllowHeaders: []string{"Origin"},
 		// 暴露的 HTTP 头部（CORS中的Access-Control-Expose-Headers）
-		ExposeHeaders: []string{"Content-Length"},
+		ExposeHeaders: []string{"Content-Length", "x-jwt-token"},
 		// 是否允许携带身份凭证（CORS中的Access-Control-Allow-Credentials）
 		AllowCredentials: true,
 		// 允许源的自定义判断函数，返回true表示允许，false表示不允许
@@ -43,10 +41,6 @@ func main() {
 		// 用于缓存预检请求结果的最大时间（CORS中的Access-Control-Max-Age）
 		MaxAge: 12 * time.Hour,
 	}))
-
-	store := cookie.NewStore([]byte("secret"))
-
-	server.Use(sessions.Sessions("webook", store))
 
 	//检验登录状态
 	server.Use(middleware.NewLoginMiddlewareBuilder().
