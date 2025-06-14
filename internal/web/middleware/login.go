@@ -53,6 +53,13 @@ func (l *LoginMiddlewareBuilder) Build() gin.HandlerFunc {
 			ctx.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
+
+		if claims.UserAgent != ctx.Request.UserAgent() {
+			//记录日志
+			ctx.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+
 		//刷新登录
 		if claims.ExpiresAt.Time.Sub(time.Now()) < time.Minute*15 {
 			claims.ExpiresAt = jwt.NewNumericDate(time.Now().Add(time.Minute * 30))
