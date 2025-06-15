@@ -4,6 +4,7 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/jym0818/webook/internal/repository"
+	"github.com/jym0818/webook/internal/repository/cache"
 	"github.com/jym0818/webook/internal/repository/dao"
 	"github.com/jym0818/webook/internal/service"
 	"github.com/jym0818/webook/internal/web"
@@ -66,7 +67,8 @@ func main() {
 		panic(err)
 	}
 	userDAO := dao.NewuserDAO(db)
-	userRepo := repository.NewuserRepository(userDAO)
+	userCache := cache.NewuserCache(cmd)
+	userRepo := repository.NewuserRepository(userDAO, userCache)
 	userSvc := service.NewuserService(userRepo)
 	userHandler := web.NewUserHandler(userSvc)
 	userHandler.RegisterRoutes(server)
