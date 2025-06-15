@@ -131,7 +131,14 @@ func (h *UserHandler) Signup(c *gin.Context) {
 
 func (h *UserHandler) Profile(c *gin.Context) {
 	claims := c.MustGet("claims").(*UserClaims)
-	c.JSON(http.StatusOK, Result{Data: claims.Uid})
+
+	user, err := h.svc.Profile(c.Request.Context(), claims.Uid)
+
+	if err != nil {
+		c.JSON(http.StatusOK, Result{Code: 500, Msg: "系统错误"})
+		return
+	}
+	c.JSON(http.StatusOK, Result{Code: 200, Msg: "ok", Data: user})
 
 }
 

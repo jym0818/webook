@@ -11,6 +11,7 @@ import (
 type UserService interface {
 	Signup(ctx context.Context, user domain.User) error
 	Login(ctx context.Context, email, password string) (domain.User, error)
+	Profile(ctx context.Context, uid int64) (domain.User, error)
 }
 
 var ErrUserDuplicateEmail = repository.ErrUserDuplicateEmail
@@ -18,6 +19,10 @@ var ErrInvalidUserOrPassword = errors.New("账号或者密码错误")
 
 type userService struct {
 	repo repository.UserRepository
+}
+
+func (svc *userService) Profile(ctx context.Context, uid int64) (domain.User, error) {
+	return svc.repo.FindById(ctx, uid)
 }
 
 func (svc *userService) Login(ctx context.Context, email, password string) (domain.User, error) {

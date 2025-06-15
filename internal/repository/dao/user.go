@@ -14,10 +14,17 @@ var ErrUserNotFound = gorm.ErrRecordNotFound
 type UserDAO interface {
 	Insert(ctx context.Context, user User) error
 	FindByEmail(ctx context.Context, email string) (User, error)
+	FindById(ctx context.Context, uid int64) (User, error)
 }
 
 type userDAO struct {
 	db *gorm.DB
+}
+
+func (dao *userDAO) FindById(ctx context.Context, uid int64) (User, error) {
+	var user User
+	err := dao.db.WithContext(ctx).Where("id= ?", uid).First(&user).Error
+	return user, err
 }
 
 func (dao *userDAO) FindByEmail(ctx context.Context, email string) (User, error) {
