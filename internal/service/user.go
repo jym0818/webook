@@ -12,6 +12,7 @@ type UserService interface {
 	Signup(ctx context.Context, user domain.User) error
 	Login(ctx context.Context, email, password string) (domain.User, error)
 	Profile(ctx context.Context, uid int64) (domain.User, error)
+	FindOrCreate(ctx context.Context, phone string) (domain.User, error)
 }
 
 var ErrUserDuplicateEmail = repository.ErrUserDuplicateEmail
@@ -19,6 +20,23 @@ var ErrInvalidUserOrPassword = errors.New("账号或者密码错误")
 
 type userService struct {
 	repo repository.UserRepository
+}
+
+func (svc *userService) FindOrCreate(ctx context.Context, phone string) (domain.User, error) {
+	//查找
+	u, err := svc.repo.FindByPhone(ctx, phone)
+	if err != repository.ErrUserNotFound {
+		return u, nil
+	}
+	//创建
+	err = svc.repo.Create(ctx, domain.User{
+		Phone: phone,
+	})
+	if err != nil {
+		return domain.User{}, err
+	}
+	//创建成功，再次找
+	return svc.repo.FindByPhone(ctx, phone)
 }
 
 func (svc *userService) Profile(ctx context.Context, uid int64) (domain.User, error) {

@@ -2,9 +2,11 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 	"github.com/jym0818/webook/internal/domain"
 	"github.com/jym0818/webook/internal/repository/cache"
 	"github.com/jym0818/webook/internal/repository/dao"
+	"time"
 )
 
 var ErrUserDuplicateEmail = dao.ErrUserDuplicateEmail
@@ -14,6 +16,7 @@ type UserRepository interface {
 	Create(ctx context.Context, user domain.User) error
 	FindByEmail(ctx context.Context, email string) (domain.User, error)
 	FindById(ctx context.Context, uid int64) (domain.User, error)
+	FindByPhone(ctx context.Context, phone string) (domain.User, error)
 }
 
 type userRepository struct {
@@ -31,11 +34,7 @@ func (repo *userRepository) FindById(ctx context.Context, uid int64) (domain.Use
 	if err != nil {
 		return domain.User{}, err
 	}
-	u = domain.User{
-		Id:       ue.Id,
-		Email:    ue.Email,
-		Password: ue.Password,
-	}
+	u = repo.toDomain(ue)
 	//回写缓存
 	go func() {
 		err = repo.cache.Set(ctx, u)
@@ -51,7 +50,15 @@ func (repo *userRepository) FindByEmail(ctx context.Context, email string) (doma
 	if err != nil {
 		return domain.User{}, err
 	}
-	return domain.User{Id: user.Id, Email: user.Email, Password: user.Password}, nil
+	return repo.toDomain(user), nil
+}
+
+func (repo *userRepository) FindByPhone(ctx context.Context, phone string) (domain.User, error) {
+	user, err := repo.dao.FindByPhone(ctx, phone)
+	if err != nil {
+		return domain.User{}, err
+	}
+	return repo.toDomain(user), nil
 }
 
 func NewuserRepository(dao dao.UserDAO, cache cache.UserCache) UserRepository {
@@ -59,5 +66,31 @@ func NewuserRepository(dao dao.UserDAO, cache cache.UserCache) UserRepository {
 }
 
 func (repo *userRepository) Create(ctx context.Context, user domain.User) error {
-	return repo.dao.Insert(ctx, dao.User{Email: user.Email, Password: user.Password})
+	return repo.dao.Insert(ctx, repo.toEntity(user))
+}
+
+func (repo *userRepository) toEntity(user domain.User) dao.User {
+	return dao.User{
+		Id:    user.Id,
+		Ctime: user.Ctime.UnixMilli(),
+		Utime: user.Utime.UnixMilli(),
+		Email: sql.NullString{
+			String: user.Email,
+			Valid:  user.Email != "",
+		},
+		Phone: sql.NullString{
+			String: user.Password,
+			Valid:  user.Phone != "",
+		},
+	}
+}
+
+func (repo *userRepository) toDomain(user dao.User) domain.User {
+	return domain.User{
+		Id:    user.Id,
+		Utime: time.UnixMilli(user.Utime),
+		Ctime: time.UnixMilli(user.Ctime),
+		Phone: user.Phone.String,
+		Email: user.Email.String,
+	}
 }
