@@ -86,6 +86,7 @@ func (h *UserHandler) setJWT(c *gin.Context, uid int64) error {
 		return err
 	}
 	c.Header("x-jwt-token", token)
+	return nil
 }
 
 func (h *UserHandler) Signup(c *gin.Context) {

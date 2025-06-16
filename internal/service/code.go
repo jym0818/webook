@@ -34,7 +34,7 @@ func (svc *codeService) Send(ctx context.Context, biz, phone string) error {
 	//生成验证码
 	code := svc.generate()
 	//redis存储
-	err := svc.repo.Store(ctx, code, biz, phone)
+	err := svc.repo.Store(ctx, biz, phone, code)
 	if err != nil {
 		return err
 	}

@@ -7,6 +7,7 @@ import (
 	"github.com/jym0818/webook/internal/repository/cache"
 	"github.com/jym0818/webook/internal/repository/dao"
 	"github.com/jym0818/webook/internal/service"
+	"github.com/jym0818/webook/internal/service/sms/memory"
 	"github.com/jym0818/webook/internal/web"
 	"github.com/jym0818/webook/internal/web/middleware"
 	"github.com/jym0818/webook/pkg/ginx/middlewares/ratelimit"
@@ -55,6 +56,8 @@ func main() {
 	server.Use(middleware.NewLoginMiddlewareBuilder().
 		IgnorePath("/user/login").
 		IgnorePath("/user/signup").
+		IgnorePath("/user/login_sms").
+		IgnorePath("/user/login_sms/send").
 		Build())
 
 	//依赖注入
@@ -70,7 +73,12 @@ func main() {
 	userCache := cache.NewuserCache(cmd)
 	userRepo := repository.NewuserRepository(userDAO, userCache)
 	userSvc := service.NewuserService(userRepo)
-	userHandler := web.NewUserHandler(userSvc)
+
+	codeCache := cache.NewcodeCache(cmd)
+	codeRepo := repository.NewcodeRepository(codeCache)
+	smsSvc := memory.NewService()
+	codeSvc := service.NewcodeService(codeRepo, smsSvc)
+	userHandler := web.NewUserHandler(userSvc, codeSvc)
 	userHandler.RegisterRoutes(server)
 	server.Run(":8080")
 }

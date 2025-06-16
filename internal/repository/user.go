@@ -79,7 +79,7 @@ func (repo *userRepository) toEntity(user domain.User) dao.User {
 			Valid:  user.Email != "",
 		},
 		Phone: sql.NullString{
-			String: user.Password,
+			String: user.Phone,
 			Valid:  user.Phone != "",
 		},
 	}

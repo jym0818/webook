@@ -28,6 +28,6 @@ func (repo *codeRepository) Store(ctx context.Context, biz, phone, code string) 
 	return repo.cache.Set(ctx, biz, phone, code)
 }
 
-func newCodeRepository(cache cache.CodeCache) CodeRepository {
+func NewcodeRepository(cache cache.CodeCache) CodeRepository {
 	return &codeRepository{cache: cache}
 }

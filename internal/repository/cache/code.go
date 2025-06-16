@@ -29,10 +29,11 @@ type codeCache struct {
 }
 
 func (c *codeCache) Set(ctx context.Context, biz, phone, code string) error {
-	val, err := c.cmd.Eval(ctx, luaSetCodeScript, []string{c.generate(biz, phone)}, code).Int()
+	val, err := c.cmd.Eval(ctx, luaSetCodeScript, []string{c.key(biz, phone)}, code).Int()
 	if err != nil {
 		return err
 	}
+	fmt.Println(val)
 	switch val {
 	case 0:
 		return nil
@@ -44,7 +45,7 @@ func (c *codeCache) Set(ctx context.Context, biz, phone, code string) error {
 }
 
 func (c *codeCache) Verify(ctx context.Context, biz, phone string, inputCode string) (bool, error) {
-	val, err := c.cmd.Eval(ctx, luaVerifyCodeScript, []string{c.generate(biz, phone)}, inputCode).Int()
+	val, err := c.cmd.Eval(ctx, luaVerifyCodeScript, []string{c.key(biz, phone)}, inputCode).Int()
 	if err != nil {
 		return false, err
 	}
@@ -58,7 +59,7 @@ func (c *codeCache) Verify(ctx context.Context, biz, phone string, inputCode str
 	}
 }
 
-func (c *codeCache) generate(biz, phone string) string {
+func (c *codeCache) key(biz, phone string) string {
 	return fmt.Sprintf("phone_code:%s:%s", biz, phone)
 }
 
