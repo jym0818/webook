@@ -10,6 +10,7 @@ if cnt == nil or cnt <= 0 then
 end
 
 if code == inputCode then
+    redis.call("set",cntKey,0)
     return 0
 else
     return -2
