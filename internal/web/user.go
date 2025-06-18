@@ -3,12 +3,13 @@ package web
 import (
 	"fmt"
 	regexp "github.com/dlclark/regexp2"
-	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/jym0818/webook/internal/domain"
 	"github.com/jym0818/webook/internal/service"
+	"github.com/redis/go-redis/v9"
 	"net/http"
+	"time"
 )
 
 const emailRegexPattern = "^\\w+([-+.]\\w+)*@\\w+([-.]\\w+)*\\.\\w+([-.]\\w+)*$"
@@ -21,15 +22,17 @@ type UserHandler struct {
 	svc         service.UserService
 	codeSvc     service.CodeService
 	jwtHandler
+	cmd redis.Cmdable
 }
 
-func NewUserHandler(svc service.UserService, codeSvc service.CodeService) *UserHandler {
+func NewUserHandler(svc service.UserService, codeSvc service.CodeService, cmd redis.Cmdable) *UserHandler {
 	return &UserHandler{
 		emailExp:    regexp.MustCompile(emailRegexPattern, regexp.None),
 		passwordExp: regexp.MustCompile(passwordRegexPattern, regexp.None),
 		svc:         svc,
 		codeSvc:     codeSvc,
 		jwtHandler:  jwtHandler{},
+		cmd:         cmd,
 	}
 }
 
@@ -142,11 +145,14 @@ func (h *UserHandler) Profile(c *gin.Context) {
 }
 
 func (h *UserHandler) Logout(c *gin.Context) {
-	sess := sessions.Default(c)
-	sess.Options(sessions.Options{
-		MaxAge: -1,
-	})
-	sess.Save()
+	c.Header("x-jwt-token", "")
+	c.Header("x-refresh-token", "")
+	uc := c.MustGet("claims").(*UserClaims)
+	err := h.cmd.Set(c, fmt.Sprintf("user:ssid:%s", uc.Ssid), "", time.Hour*7*24).Err()
+	if err != nil {
+		c.JSON(http.StatusOK, Result{Code: 500, Msg: "系统错误"})
+		return
+	}
 	c.JSON(http.StatusOK, Result{Code: 200, Msg: "退出登录成功"})
 }
 
@@ -204,24 +210,29 @@ func (h *UserHandler) SendSMS(ctx *gin.Context) {
 }
 
 func (h *UserHandler) RefreshToken(ctx *gin.Context) {
-	fmt.Println(123)
 	t := ExtractToken(ctx)
 	claims := &RefreshClaims{}
 	token, err := jwt.ParseWithClaims(t, claims, func(token *jwt.Token) (interface{}, error) {
 		return RtKey, nil
 	})
-	fmt.Println(123)
+
 	if err != nil {
 		ctx.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
-	fmt.Println(234)
+
 	if token == nil || !token.Valid || claims.Uid == 0 {
 		ctx.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
-	fmt.Println(456)
-	err = h.setJWTToken(ctx, claims.Uid)
+
+	logout, err := h.cmd.Exists(ctx, fmt.Sprintf("user:ssid:%s", claims.Ssid)).Result()
+	if logout > 0 || err != nil {
+		ctx.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
+	err = h.setJWTToken(ctx, claims.Uid, claims.Ssid)
 	if err != nil {
 		ctx.AbortWithStatus(http.StatusUnauthorized)
 		return

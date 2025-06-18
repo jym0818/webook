@@ -1,18 +1,23 @@
 package middleware
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/jym0818/webook/internal/web"
+	"github.com/redis/go-redis/v9"
 	"net/http"
 )
 
 type LoginMiddlewareBuilder struct {
 	paths []string
+	cmd   redis.Cmdable
 }
 
-func NewLoginMiddlewareBuilder() *LoginMiddlewareBuilder {
-	return &LoginMiddlewareBuilder{}
+func NewLoginMiddlewareBuilder(cmd redis.Cmdable) *LoginMiddlewareBuilder {
+	return &LoginMiddlewareBuilder{
+		cmd: cmd,
+	}
 }
 
 func (l *LoginMiddlewareBuilder) IgnorePath(path string) *LoginMiddlewareBuilder {
@@ -47,7 +52,11 @@ func (l *LoginMiddlewareBuilder) Build() gin.HandlerFunc {
 			ctx.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
-
+		logout, err := l.cmd.Exists(ctx, fmt.Sprintf("users:ssid:%s", claims.Ssid)).Result()
+		if logout > 0 || err != nil {
+			ctx.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
 		ctx.Set("claims", claims)
 
 	}

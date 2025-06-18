@@ -23,7 +23,7 @@ func InitMiddlware(cmd redis.Cmdable) []gin.HandlerFunc {
 		corsHdl(),
 		////限流
 		//ratelimit.NewBuilder(cmd, time.Second, 100).Build(),
-		middleware.NewLoginMiddlewareBuilder().
+		middleware.NewLoginMiddlewareBuilder(cmd).
 			IgnorePath("/user/login").
 			IgnorePath("/user/signup").
 			IgnorePath("/user/login_sms").

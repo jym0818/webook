@@ -3,6 +3,7 @@ package web
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"strings"
 	"time"
 )
@@ -15,19 +16,21 @@ var (
 type jwtHandler struct{}
 
 func (h jwtHandler) setJWT(c *gin.Context, uid int64) error {
-	err := h.setJWTToken(c, uid)
+	ssid := uuid.New().String()
+	err := h.setJWTToken(c, uid, ssid)
 	if err != nil {
 		return err
 	}
-	return h.setRefreshToken(c, uid)
+	return h.setRefreshToken(c, uid, ssid)
 }
 
-func (h jwtHandler) setJWTToken(c *gin.Context, uid int64) error {
+func (h jwtHandler) setJWTToken(c *gin.Context, uid int64, uuid string) error {
 	claims := UserClaims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 30)),
 		},
 		Uid:       uid,
+		Ssid:      uuid,
 		UserAgent: c.Request.UserAgent(),
 	}
 	t := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
@@ -39,12 +42,13 @@ func (h jwtHandler) setJWTToken(c *gin.Context, uid int64) error {
 	return nil
 }
 
-func (h jwtHandler) setRefreshToken(c *gin.Context, uid int64) error {
+func (h jwtHandler) setRefreshToken(c *gin.Context, uid int64, uuid string) error {
 	claims := RefreshClaims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24 * 7)),
 		},
-		Uid: uid,
+		Uid:  uid,
+		Ssid: uuid,
 	}
 	t := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
 	token, err := t.SignedString(RtKey)
@@ -70,9 +74,11 @@ type UserClaims struct {
 	jwt.RegisteredClaims
 	Uid       int64
 	UserAgent string
+	Ssid      string
 }
 
 type RefreshClaims struct {
 	jwt.RegisteredClaims
-	Uid int64
+	Uid  int64
+	Ssid string
 }
