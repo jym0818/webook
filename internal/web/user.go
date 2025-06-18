@@ -4,11 +4,9 @@ import (
 	regexp "github.com/dlclark/regexp2"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/jym0818/webook/internal/domain"
 	"github.com/jym0818/webook/internal/service"
 	"net/http"
-	"time"
 )
 
 const emailRegexPattern = "^\\w+([-+.]\\w+)*@\\w+([-.]\\w+)*\\.\\w+([-.]\\w+)*$"
@@ -20,6 +18,7 @@ type UserHandler struct {
 	passwordExp *regexp.Regexp
 	svc         service.UserService
 	codeSvc     service.CodeService
+	jwtHandler
 }
 
 func NewUserHandler(svc service.UserService, codeSvc service.CodeService) *UserHandler {
@@ -28,6 +27,7 @@ func NewUserHandler(svc service.UserService, codeSvc service.CodeService) *UserH
 		passwordExp: regexp.MustCompile(passwordRegexPattern, regexp.None),
 		svc:         svc,
 		codeSvc:     codeSvc,
+		jwtHandler:  jwtHandler{},
 	}
 }
 
@@ -70,23 +70,6 @@ func (h *UserHandler) Login(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, Result{Code: 200, Msg: "登录成功"})
 
-}
-
-func (h *UserHandler) setJWT(c *gin.Context, uid int64) error {
-	claims := UserClaims{
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 30)),
-		},
-		Uid:       uid,
-		UserAgent: c.Request.UserAgent(),
-	}
-	t := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
-	token, err := t.SignedString([]byte("sDKU8mor4FhrCDsFmmMYifqYb8u2X4c7"))
-	if err != nil {
-		return err
-	}
-	c.Header("x-jwt-token", token)
-	return nil
 }
 
 func (h *UserHandler) Signup(c *gin.Context) {
@@ -216,10 +199,4 @@ func (h *UserHandler) SendSMS(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, Result{Code: 500, Msg: "系统错误"})
 	}
 	ctx.JSON(http.StatusOK, Result{Code: 200, Msg: "发送成功"})
-}
-
-type UserClaims struct {
-	jwt.RegisteredClaims
-	Uid       int64
-	UserAgent string
 }

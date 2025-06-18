@@ -17,6 +17,7 @@ type UserRepository interface {
 	FindByEmail(ctx context.Context, email string) (domain.User, error)
 	FindById(ctx context.Context, uid int64) (domain.User, error)
 	FindByPhone(ctx context.Context, phone string) (domain.User, error)
+	FindByWechat(ctx context.Context, openId string) (domain.User, error)
 }
 
 type userRepository struct {
@@ -82,6 +83,14 @@ func (repo *userRepository) toEntity(user domain.User) dao.User {
 			String: user.Phone,
 			Valid:  user.Phone != "",
 		},
+		WechatOpenID: sql.NullString{
+			String: user.WechatInfo.OpenID,
+			Valid:  user.WechatInfo.OpenID != "",
+		},
+		WechatUnionID: sql.NullString{
+			String: user.WechatInfo.UnionID,
+			Valid:  user.WechatInfo.UnionID != "",
+		},
 	}
 }
 
@@ -92,5 +101,17 @@ func (repo *userRepository) toDomain(user dao.User) domain.User {
 		Ctime: time.UnixMilli(user.Ctime),
 		Phone: user.Phone.String,
 		Email: user.Email.String,
+		WechatInfo: domain.WechatInfo{
+			OpenID:  user.WechatOpenID.String,
+			UnionID: user.WechatUnionID.String,
+		},
 	}
+}
+
+func (repo *userRepository) FindByWechat(ctx context.Context, openId string) (domain.User, error) {
+	user, err := repo.dao.FindByWechat(ctx, openId)
+	if err != nil {
+		return domain.User{}, err
+	}
+	return repo.toDomain(user), nil
 }
