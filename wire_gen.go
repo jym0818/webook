@@ -28,11 +28,14 @@ func InitServer() *gin.Engine {
 	userService := service.NewuserService(userRepository)
 	codeCache := cache.NewcodeCache(cmdable)
 	codeRepository := repository.NewcodeRepository(codeCache)
-	smsService := ioc.InitSMS()
+	smsService := ioc.InitSMS(cmdable)
 	codeService := service.NewcodeService(codeRepository, smsService)
 	userHandler := web.NewUserHandler(userService, codeService)
 	v := ioc.InitMiddlware(cmdable)
-	engine := ioc.InitWeb(userHandler, v)
+	wechatService := ioc.InitWechat()
+	config := ioc.InitWechatCfg()
+	oAuth2WechatHandler := web.NewOAuth2WechatHandler(wechatService, userService, config)
+	engine := ioc.InitWeb(userHandler, v, oAuth2WechatHandler)
 	return engine
 }
 
