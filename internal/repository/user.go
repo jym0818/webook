@@ -72,9 +72,10 @@ func (repo *userRepository) Create(ctx context.Context, user domain.User) error 
 
 func (repo *userRepository) toEntity(user domain.User) dao.User {
 	return dao.User{
-		Id:    user.Id,
-		Ctime: user.Ctime.UnixMilli(),
-		Utime: user.Utime.UnixMilli(),
+		Id:       user.Id,
+		Ctime:    user.Ctime.UnixMilli(),
+		Utime:    user.Utime.UnixMilli(),
+		Password: user.Password,
 		Email: sql.NullString{
 			String: user.Email,
 			Valid:  user.Email != "",
@@ -96,11 +97,12 @@ func (repo *userRepository) toEntity(user domain.User) dao.User {
 
 func (repo *userRepository) toDomain(user dao.User) domain.User {
 	return domain.User{
-		Id:    user.Id,
-		Utime: time.UnixMilli(user.Utime),
-		Ctime: time.UnixMilli(user.Ctime),
-		Phone: user.Phone.String,
-		Email: user.Email.String,
+		Id:       user.Id,
+		Utime:    time.UnixMilli(user.Utime),
+		Ctime:    time.UnixMilli(user.Ctime),
+		Phone:    user.Phone.String,
+		Password: user.Password,
+		Email:    user.Email.String,
 		WechatInfo: domain.WechatInfo{
 			OpenID:  user.WechatOpenID.String,
 			UnionID: user.WechatUnionID.String,

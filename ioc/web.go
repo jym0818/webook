@@ -28,6 +28,7 @@ func InitMiddlware(cmd redis.Cmdable) []gin.HandlerFunc {
 			IgnorePath("/user/signup").
 			IgnorePath("/user/login_sms").
 			IgnorePath("/user/login_sms/send").
+			IgnorePath("/user/refresh").
 			Build(),
 	}
 }
@@ -37,7 +38,7 @@ func corsHdl() gin.HandlerFunc {
 		//AllowMethods: []string{"POST", "GET"},
 		AllowHeaders: []string{"Content-Type", "Authorization"},
 		// 你不加这个，前端是拿不到的
-		ExposeHeaders: []string{"x-jwt-token"},
+		ExposeHeaders: []string{"x-jwt-token", "x-refresh-token"},
 		// 是否允许你带 cookie 之类的东西
 		AllowCredentials: true,
 		AllowOriginFunc: func(origin string) bool {

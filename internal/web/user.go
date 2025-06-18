@@ -1,9 +1,11 @@
 package web
 
 import (
+	"fmt"
 	regexp "github.com/dlclark/regexp2"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/jym0818/webook/internal/domain"
 	"github.com/jym0818/webook/internal/service"
 	"net/http"
@@ -37,7 +39,7 @@ func (h *UserHandler) RegisterRoutes(s *gin.Engine) {
 	g.POST("/login", h.Login)
 	g.POST("/profile", h.Profile)
 	g.POST("/logout", h.Logout)
-
+	g.POST("/refresh", h.RefreshToken)
 	g.POST("/login_sms", h.LoginSMS)
 	g.POST("/login_sms/send", h.SendSMS)
 }
@@ -199,4 +201,32 @@ func (h *UserHandler) SendSMS(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, Result{Code: 500, Msg: "系统错误"})
 	}
 	ctx.JSON(http.StatusOK, Result{Code: 200, Msg: "发送成功"})
+}
+
+func (h *UserHandler) RefreshToken(ctx *gin.Context) {
+	fmt.Println(123)
+	t := ExtractToken(ctx)
+	claims := &RefreshClaims{}
+	token, err := jwt.ParseWithClaims(t, claims, func(token *jwt.Token) (interface{}, error) {
+		return RtKey, nil
+	})
+	fmt.Println(123)
+	if err != nil {
+		ctx.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	fmt.Println(234)
+	if token == nil || !token.Valid || claims.Uid == 0 {
+		ctx.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	fmt.Println(456)
+	err = h.setJWTToken(ctx, claims.Uid)
+	if err != nil {
+		ctx.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	ctx.JSON(http.StatusOK, Result{
+		Msg: "刷新成功",
+	})
 }
