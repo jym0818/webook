@@ -8,6 +8,7 @@ import (
 	"github.com/jym0818/webook/internal/domain"
 	"github.com/jym0818/webook/internal/service"
 	"github.com/redis/go-redis/v9"
+	"go.uber.org/zap"
 	"net/http"
 	"time"
 )
@@ -168,6 +169,7 @@ func (h *UserHandler) LoginSMS(ctx *gin.Context) {
 	ok, err := h.codeSvc.Verify(ctx.Request.Context(), "login", req.Phone, req.InputCode)
 	if err != nil {
 		ctx.JSON(http.StatusOK, Result{Code: 500, Msg: "系统错误"})
+		zap.L().Error("校验验证码出错", zap.Error(err), zap.Int64("id", 123))
 		return
 	}
 
@@ -205,6 +207,7 @@ func (h *UserHandler) SendSMS(ctx *gin.Context) {
 	}
 	if err != nil {
 		ctx.JSON(http.StatusOK, Result{Code: 500, Msg: "系统错误"})
+		return
 	}
 	ctx.JSON(http.StatusOK, Result{Code: 200, Msg: "发送成功"})
 }

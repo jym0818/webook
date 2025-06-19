@@ -10,7 +10,7 @@ import (
 func InitDB() *gorm.DB {
 
 	type Config struct {
-		DSN string `yaml:"dsm"`
+		DSN string `yaml:"dsn"`
 	}
 	var cfg Config
 	err := viper.UnmarshalKey("db.mysql", &cfg)
