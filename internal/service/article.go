@@ -8,10 +8,15 @@ import (
 
 type ArticleService interface {
 	Save(ctx context.Context, art domain.Article) (int64, error)
+	Publish(ctx context.Context, art domain.Article) (int64, error)
 }
 
 type articleService struct {
 	repo repository.ArticleRepository
+}
+
+func (svc *articleService) Publish(ctx context.Context, art domain.Article) (int64, error) {
+	return svc.repo.Sync(ctx, art)
 }
 
 func (svc *articleService) Save(ctx context.Context, art domain.Article) (int64, error) {
