@@ -22,6 +22,7 @@ func (h *ArticleHandler) RegisterRoutes(s *gin.Engine) {
 	g := s.Group("/article")
 	g.POST("/edit", h.Edit)
 	g.POST("/publish", h.Publish)
+	g.POST("/withdraw", h.Withdraw)
 }
 func (h *ArticleHandler) Edit(c *gin.Context) {
 
@@ -53,7 +54,7 @@ func (h *ArticleHandler) Publish(ctx *gin.Context) {
 	}
 
 	claims := ctx.MustGet("claims").(*UserClaims)
-	id, err := h.svc.Publish(ctx, req.toDomain(claims.Uid))
+	id, err := h.svc.Publish(ctx.Request.Context(), req.toDomain(claims.Uid))
 
 	if err != nil {
 		ctx.JSON(http.StatusOK, Result{
@@ -67,6 +68,36 @@ func (h *ArticleHandler) Publish(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, Result{
 		Msg:  "OK",
 		Data: id,
+	})
+
+}
+
+func (h *ArticleHandler) Withdraw(ctx *gin.Context) {
+	type Req struct {
+		Id int64
+	}
+	var req Req
+	if err := ctx.Bind(&req); err != nil {
+		return
+	}
+	claims := ctx.MustGet("claims").(*UserClaims)
+	err := h.svc.Withdraw(ctx.Request.Context(), domain.Article{
+		Id: req.Id,
+		Author: domain.Author{
+			Id: claims.Uid,
+		},
+	})
+	if err != nil {
+		ctx.JSON(http.StatusOK, Result{
+			Code: 5,
+			Msg:  "系统错误",
+		})
+		// 打日志？
+		zap.L().Error("保存帖子失败", zap.Error(err))
+		return
+	}
+	ctx.JSON(http.StatusOK, Result{
+		Msg: "OK",
 	})
 
 }
