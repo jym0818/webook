@@ -10,6 +10,7 @@ type ArticleService interface {
 	Save(ctx context.Context, art domain.Article) (int64, error)
 	Publish(ctx context.Context, art domain.Article) (int64, error)
 	Withdraw(ctx context.Context, article domain.Article) error
+	List(ctx context.Context, uid int64, offset int, limit int) ([]domain.Article, error)
 }
 
 type articleService struct {
@@ -20,6 +21,11 @@ func (svc *articleService) Publish(ctx context.Context, art domain.Article) (int
 	art.Status = domain.ArticleStatusPublished
 	return svc.repo.Sync(ctx, art)
 }
+
+func (svc *articleService) List(ctx context.Context, uid int64, offset int, limit int) ([]domain.Article, error) {
+	return svc.repo.List(ctx, uid, offset, limit)
+}
+
 func (svc *articleService) Withdraw(ctx context.Context, art domain.Article) error {
 	// art.Status = domain.ArticleStatusPrivate 然后直接把整个 art 往下传
 	return svc.repo.SyncStatus(ctx, art.Id, art.Author.Id, domain.ArticleStatusPrivate)

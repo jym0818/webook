@@ -23,6 +23,7 @@ func (h *ArticleHandler) RegisterRoutes(s *gin.Engine) {
 	g.POST("/edit", h.Edit)
 	g.POST("/publish", h.Publish)
 	g.POST("/withdraw", h.Withdraw)
+	g.POST("list", h.List)
 }
 func (h *ArticleHandler) Edit(c *gin.Context) {
 
@@ -101,19 +102,35 @@ func (h *ArticleHandler) Withdraw(ctx *gin.Context) {
 	})
 
 }
-func (req ArticleReq) toDomain(uid int64) domain.Article {
-	return domain.Article{
-		Id:      req.Id,
-		Title:   req.Title,
-		Content: req.Content,
-		Author: domain.Author{
-			Id: uid,
-		},
-	}
-}
 
-type ArticleReq struct {
-	Id      int64  `json:"id"`
-	Title   string `json:"title"`
-	Content string `json:"content"`
+func (h *ArticleHandler) List(ctx *gin.Context) {
+	var req ListReq
+	if err := ctx.Bind(&req); err != nil {
+		return
+	}
+	claims := ctx.MustGet("claims").(*UserClaims)
+	res, err := h.svc.List(ctx.Request.Context(), claims.Uid, req.Limit, req.Offset)
+
+	if err != nil {
+		ctx.JSON(http.StatusOK, Result{
+			Code: 5,
+			Msg:  "系统错误",
+		})
+		return
+	}
+	var arts []ArticleVO
+	for _, item := range res {
+		arts = append(arts, ArticleVO{
+			Id:       item.Id,
+			Title:    item.Title,
+			Status:   item.Status.ToUint8(),
+			Ctime:    item.Ctime.Format("2006-01-02 15:04:05"),
+			Utime:    item.Utime.Format("2006-01-02 15:04:05"),
+			Abstract: item.Abstract(),
+		})
+	}
+	ctx.JSON(http.StatusOK, Result{
+		Msg:  "OK",
+		Data: arts,
+	})
 }
