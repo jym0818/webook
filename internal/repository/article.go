@@ -5,6 +5,7 @@ import (
 	"github.com/jym0818/webook/internal/domain"
 	"github.com/jym0818/webook/internal/repository/cache"
 	"github.com/jym0818/webook/internal/repository/dao"
+	"go.uber.org/zap"
 	"time"
 )
 
@@ -14,6 +15,7 @@ type ArticleRepository interface {
 	Sync(ctx context.Context, art domain.Article) (int64, error)
 	SyncStatus(ctx context.Context, id int64, author int64, status domain.ArticleStatus) error
 	List(ctx context.Context, uid int64, offset int, limit int) ([]domain.Article, error)
+	GetByID(ctx context.Context, id int64) (domain.Article, error)
 }
 
 type articleRepository struct {
@@ -21,11 +23,27 @@ type articleRepository struct {
 	cache cache.ArticleCache
 }
 
+func (repo *articleRepository) GetByID(ctx context.Context, id int64) (domain.Article, error) {
+	//先查询缓存
+	data, err := repo.cache.Get(ctx, id)
+	if err == nil {
+		return data, nil
+	}
+	//再查询数据库
+	art, err := repo.dao.GetById(ctx, id)
+	if err != nil {
+		return domain.Article{}, err
+	}
+	return repo.toDomain(art), nil
+}
+
 func (repo *articleRepository) List(ctx context.Context, uid int64, offset int, limit int) ([]domain.Article, error) {
 	if offset == 0 && limit <= 100 {
 		data, err := repo.cache.GetFirstPage(ctx, uid)
 		if err == nil {
-
+			go func() {
+				repo.preCache(ctx, data)
+			}()
 			return data[:limit], nil
 		}
 	}
@@ -39,10 +57,12 @@ func (repo *articleRepository) List(ctx context.Context, uid int64, offset int, 
 	}
 	//回写缓存
 	go func() {
-		err = repo.cache.SetFirstPage(ctx, uid, arts)
-		if err != nil {
+		err1 := repo.cache.SetFirstPage(ctx, uid, arts)
+		if err1 != nil {
 			//记录日志
 		}
+		repo.preCache(ctx, arts)
+
 	}()
 	return arts, nil
 
@@ -102,5 +122,14 @@ func (repo *articleRepository) toDomain(art dao.Article) domain.Article {
 		Ctime:   time.UnixMilli(art.Ctime),
 		Utime:   time.UnixMilli(art.Utime),
 		Status:  domain.ArticleStatus(art.Status),
+	}
+}
+
+func (repo *articleRepository) preCache(ctx context.Context, data []domain.Article) {
+	if len(data) > 0 && len(data[0].Content) < 1024*1024 {
+		err := repo.cache.Set(ctx, data[0])
+		if err != nil {
+			zap.L().Error("提前预加载缓存失败", zap.Error(err))
+		}
 	}
 }

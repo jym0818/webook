@@ -6,6 +6,8 @@ import (
 	"github.com/jym0818/webook/internal/service"
 	"go.uber.org/zap"
 	"net/http"
+	"strconv"
+	"time"
 )
 
 type ArticleHandler struct {
@@ -24,6 +26,8 @@ func (h *ArticleHandler) RegisterRoutes(s *gin.Engine) {
 	g.POST("/publish", h.Publish)
 	g.POST("/withdraw", h.Withdraw)
 	g.POST("list", h.List)
+	g.GET("/detail/:id", h.Detail)
+
 }
 func (h *ArticleHandler) Edit(c *gin.Context) {
 
@@ -133,4 +137,52 @@ func (h *ArticleHandler) List(ctx *gin.Context) {
 		Msg:  "OK",
 		Data: arts,
 	})
+}
+
+func (h *ArticleHandler) Detail(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusOK, Result{
+			Msg: "系统错误",
+		})
+	}
+
+	claims := ctx.MustGet("claims").(*UserClaims)
+	art, err := h.svc.GetById(ctx.Request.Context(), id)
+	if err != nil {
+		ctx.JSON(http.StatusOK, Result{
+			Code: 5,
+			Msg:  "系统错误",
+		})
+
+		return
+	}
+	// 这是不借助数据库查询来判定的方法
+	if art.Author.Id != claims.Uid {
+		ctx.JSON(http.StatusOK, Result{
+			Code: 4,
+			// 也不需要告诉前端究竟发生了什么
+			Msg: "输入有误",
+		})
+		// 如果公司有风控系统，这个时候就要上报这种非法访问的用户了。
+
+		return
+	}
+
+	ctx.JSON(http.StatusOK, Result{
+		Data: ArticleVO{
+			Id:    art.Id,
+			Title: art.Title,
+			// 不需要这个摘要信息
+			//Abstract: art.Abstract(),
+			Status:  art.Status.ToUint8(),
+			Content: art.Content,
+			// 这个是创作者看自己的文章列表，也不需要这个字段
+			//Author: art.Author
+			Ctime: art.Ctime.Format(time.DateTime),
+			Utime: art.Utime.Format(time.DateTime),
+		},
+	})
+
 }
