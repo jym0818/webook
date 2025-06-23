@@ -28,6 +28,10 @@ func (h *ArticleHandler) RegisterRoutes(s *gin.Engine) {
 	g.POST("list", h.List)
 	g.GET("/detail/:id", h.Detail)
 
+	pub := g.Group("/pub")
+	//pub.GET("/pub", a.PubList)
+	pub.GET("/:id", h.PubDetail)
+
 }
 func (h *ArticleHandler) Edit(c *gin.Context) {
 
@@ -185,4 +189,40 @@ func (h *ArticleHandler) Detail(ctx *gin.Context) {
 		},
 	})
 
+}
+
+func (h *ArticleHandler) PubDetail(ctx *gin.Context) {
+	idstr := ctx.Param("id")
+	id, err := strconv.ParseInt(idstr, 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusOK, Result{
+			Code: 4,
+			Msg:  "参数错误",
+		})
+
+		return
+	}
+	//claims := ctx.MustGet("claims").(*UserClaims)
+
+	art, err := h.svc.GetPublishedById(ctx.Request.Context(), id)
+	if err != nil {
+		ctx.JSON(http.StatusOK, Result{
+			Code: 5,
+			Msg:  "系统错误",
+		})
+		zap.L().Error("获得文章信息失败", zap.Error(err))
+		return
+	}
+	ctx.JSON(http.StatusOK, Result{
+		Data: ArticleVO{
+			Id:      art.Id,
+			Title:   art.Title,
+			Status:  art.Status.ToUint8(),
+			Content: art.Content,
+			// 要把作者信息带出去
+			Author: art.Author.Name,
+			Ctime:  art.Ctime.Format(time.DateTime),
+			Utime:  art.Utime.Format(time.DateTime),
+		},
+	})
 }

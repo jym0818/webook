@@ -16,11 +16,40 @@ type ArticleRepository interface {
 	SyncStatus(ctx context.Context, id int64, author int64, status domain.ArticleStatus) error
 	List(ctx context.Context, uid int64, offset int, limit int) ([]domain.Article, error)
 	GetByID(ctx context.Context, id int64) (domain.Article, error)
+	GetPublishedById(ctx context.Context, id int64) (domain.Article, error)
 }
 
 type articleRepository struct {
 	dao   dao.ArticleDAO
 	cache cache.ArticleCache
+
+	userRepo UserRepository
+}
+
+func (repo *articleRepository) GetPublishedById(ctx context.Context, id int64) (domain.Article, error) {
+	// 读取线上库数据，如果你的 Content 被你放过去了 OSS 上，你就要让前端去读 Content 字段
+	art, err := repo.dao.GetPubById(ctx, id)
+	if err != nil {
+		return domain.Article{}, err
+	}
+	// 你在这边要组装 user 了，适合单体应用
+	usr, err := repo.userRepo.FindById(ctx, art.AuthorId)
+	if err != nil {
+		return domain.Article{}, err
+	}
+	res := domain.Article{
+		Id:      art.Id,
+		Title:   art.Title,
+		Status:  domain.ArticleStatus(art.Status),
+		Content: art.Content,
+		Author: domain.Author{
+			Id:   usr.Id,
+			Name: usr.Nickname,
+		},
+		Ctime: time.UnixMilli(art.Ctime),
+		Utime: time.UnixMilli(art.Utime),
+	}
+	return res, nil
 }
 
 func (repo *articleRepository) GetByID(ctx context.Context, id int64) (domain.Article, error) {
@@ -75,9 +104,15 @@ func (repo *articleRepository) Sync(ctx context.Context, art domain.Article) (in
 		if err1 != nil {
 			//不太关心，记录日志
 		}
+		er := repo.cache.SetPub(ctx, art)
+		if er != nil {
+			// 不需要特别关心
+			// 比如说输出 WARN 日志
+		}
 	}
 	return id, err
 }
+
 func (repo *articleRepository) SyncStatus(ctx context.Context, id int64, author int64, status domain.ArticleStatus) error {
 	return repo.dao.SyncStatus(ctx, id, author, uint8(status))
 }
@@ -97,8 +132,8 @@ func (repo *articleRepository) Update(ctx context.Context, art domain.Article) e
 	return repo.dao.UpdateById(ctx, repo.toEntity(art))
 }
 
-func NewarticleRepository(dao dao.ArticleDAO, cache cache.ArticleCache) ArticleRepository {
-	return &articleRepository{dao: dao, cache: cache}
+func NewarticleRepository(dao dao.ArticleDAO, cache cache.ArticleCache, userRepo UserRepository) ArticleRepository {
+	return &articleRepository{dao: dao, cache: cache, userRepo: userRepo}
 }
 
 func (repo *articleRepository) toEntity(art domain.Article) dao.Article {

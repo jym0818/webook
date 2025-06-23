@@ -16,10 +16,36 @@ type ArticleCache interface {
 	Set(ctx context.Context, art domain.Article) error
 	Get(ctx context.Context, id int64) (domain.Article, error)
 	Del(ctx context.Context, id int64) error
+
+	// SetPub 正常来说，创作者和读者的 Redis 集群要分开，因为读者是一个核心中的核心
+	SetPub(ctx context.Context, article domain.Article) error
+	GetPub(ctx context.Context, id int64) (domain.Article, error)
 }
 
 type articleCache struct {
 	cmd redis.Cmdable
+}
+
+func (cache *articleCache) SetPub(ctx context.Context, art domain.Article) error {
+	data, err := json.Marshal(art)
+	if err != nil {
+		return err
+	}
+	return cache.cmd.Set(ctx, cache.readerArtKey(art.Id),
+		data,
+		// 设置长过期时间
+		time.Minute*30).Err()
+}
+
+func (cache *articleCache) GetPub(ctx context.Context, id int64) (domain.Article, error) {
+	// 可以直接使用 Bytes 方法来获得 []byte
+	data, err := cache.cmd.Get(ctx, cache.readerArtKey(id)).Bytes()
+	if err != nil {
+		return domain.Article{}, err
+	}
+	var res domain.Article
+	err = json.Unmarshal(data, &res)
+	return res, err
 }
 
 func (cache *articleCache) GetFirstPage(ctx context.Context, uid int64) ([]domain.Article, error) {
@@ -79,4 +105,9 @@ func NewArticleCache(cmd redis.Cmdable) ArticleCache {
 }
 func (cache *articleCache) firstPageKey(author int64) string {
 	return fmt.Sprintf("article:first_page:%d", author)
+}
+
+// 读者端的缓存设置
+func (cache *articleCache) readerArtKey(id int64) string {
+	return fmt.Sprintf("article:reader:%d", id)
 }

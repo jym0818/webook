@@ -92,6 +92,7 @@ func (repo *userRepository) toEntity(user domain.User) dao.User {
 			String: user.WechatInfo.UnionID,
 			Valid:  user.WechatInfo.UnionID != "",
 		},
+		Nickname: user.Nickname,
 	}
 }
 
@@ -107,6 +108,7 @@ func (repo *userRepository) toDomain(user dao.User) domain.User {
 			OpenID:  user.WechatOpenID.String,
 			UnionID: user.WechatUnionID.String,
 		},
+		Nickname: user.Nickname,
 	}
 }
 

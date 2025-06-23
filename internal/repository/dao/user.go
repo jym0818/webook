@@ -76,4 +76,5 @@ type User struct {
 	WechatUnionID sql.NullString
 	WechatOpenID  sql.NullString `gorm:"unique"`
 	//openID 一定是唯一的
+	Nickname string
 }
