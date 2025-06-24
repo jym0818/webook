@@ -28,8 +28,17 @@ var CodeService = wire.NewSet(
 
 var ArticleService = wire.NewSet(
 	dao.NewarticleDAO,
+	cache.NewarticleCache,
 	repository.NewarticleRepository,
-	service.NewarticleService)
+	service.NewarticleService,
+)
+
+var InteractiveService = wire.NewSet(
+	dao.NewinteractiveDAO,
+	cache.NewinteractiveCache,
+	repository.NewinteractiveRepository,
+	service.NewinteractiveService,
+)
 
 func InitServer() *gin.Engine {
 	wire.Build(
@@ -49,6 +58,8 @@ func InitServer() *gin.Engine {
 
 		ArticleService,
 		web.NewArticleHandler,
+
+		InteractiveService,
 	)
 	return new(gin.Engine)
 }

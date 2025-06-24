@@ -100,7 +100,7 @@ func (cache *articleCache) authorArtKey(id int64) string {
 	return fmt.Sprintf("article:author:%d", id)
 }
 
-func NewArticleCache(cmd redis.Cmdable) ArticleCache {
+func NewarticleCache(cmd redis.Cmdable) ArticleCache {
 	return &articleCache{cmd: cmd}
 }
 func (cache *articleCache) firstPageKey(author int64) string {

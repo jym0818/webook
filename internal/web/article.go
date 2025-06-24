@@ -11,12 +11,16 @@ import (
 )
 
 type ArticleHandler struct {
-	svc service.ArticleService
+	svc     service.ArticleService
+	intrSvc service.InteractiveService
+	biz     string
 }
 
-func NewArticleHandler(svc service.ArticleService) *ArticleHandler {
+func NewArticleHandler(svc service.ArticleService, intrSvc service.InteractiveService) *ArticleHandler {
 	return &ArticleHandler{
-		svc: svc,
+		svc:     svc,
+		intrSvc: intrSvc,
+		biz:     "article",
 	}
 }
 
@@ -202,7 +206,7 @@ func (h *ArticleHandler) PubDetail(ctx *gin.Context) {
 
 		return
 	}
-	//claims := ctx.MustGet("claims").(*UserClaims)
+	claims := ctx.MustGet("claims").(*UserClaims)
 
 	art, err := h.svc.GetPublishedById(ctx.Request.Context(), id)
 	if err != nil {
@@ -213,6 +217,16 @@ func (h *ArticleHandler) PubDetail(ctx *gin.Context) {
 		zap.L().Error("获得文章信息失败", zap.Error(err))
 		return
 	}
+
+	//增加阅读计数
+	go func() {
+		er := h.intrSvc.IncrReadCnt(ctx, h.biz, art.Id)
+		if er != nil {
+			//记录日志
+			zap.L().Error("记录日志失败 ", zap.Int64("文章Id", art.Id), zap.Error(er))
+		}
+	}()
+
 	ctx.JSON(http.StatusOK, Result{
 		Data: ArticleVO{
 			Id:      art.Id,

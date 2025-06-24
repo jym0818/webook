@@ -36,9 +36,14 @@ func InitServer() *gin.Engine {
 	config := ioc.InitWechatCfg()
 	oAuth2WechatHandler := web.NewOAuth2WechatHandler(wechatService, userService, config)
 	articleDAO := dao.NewarticleDAO(db)
-	articleRepository := repository.NewarticleRepository(articleDAO)
+	articleCache := cache.NewarticleCache(cmdable)
+	articleRepository := repository.NewarticleRepository(articleDAO, articleCache, userRepository)
 	articleService := service.NewarticleService(articleRepository)
-	articleHandler := web.NewArticleHandler(articleService)
+	interactiveCache := cache.NewinteractiveCache(cmdable)
+	interactiveDAO := dao.NewinteractiveDAO(db)
+	interactiveRepository := repository.NewinteractiveRepository(interactiveCache, interactiveDAO)
+	interactiveService := service.NewinteractiveService(interactiveRepository)
+	articleHandler := web.NewArticleHandler(articleService, interactiveService)
 	engine := ioc.InitWeb(userHandler, v, oAuth2WechatHandler, articleHandler)
 	return engine
 }
@@ -49,4 +54,6 @@ var UserService = wire.NewSet(cache.NewuserCache, dao.NewuserDAO, repository.New
 
 var CodeService = wire.NewSet(cache.NewcodeCache, repository.NewcodeRepository, service.NewcodeService)
 
-var ArticleService = wire.NewSet(dao.NewarticleDAO, repository.NewarticleRepository, service.NewarticleService)
+var ArticleService = wire.NewSet(dao.NewarticleDAO, cache.NewarticleCache, repository.NewarticleRepository, service.NewarticleService)
+
+var InteractiveService = wire.NewSet(dao.NewinteractiveDAO, cache.NewinteractiveCache, repository.NewinteractiveRepository, service.NewinteractiveService)
