@@ -36,6 +36,8 @@ func (h *ArticleHandler) RegisterRoutes(s *gin.Engine) {
 	//pub.GET("/pub", a.PubList)
 	pub.GET("/:id", h.PubDetail)
 
+	pub.POST("/like", h.Like)
+
 }
 func (h *ArticleHandler) Edit(c *gin.Context) {
 
@@ -239,4 +241,30 @@ func (h *ArticleHandler) PubDetail(ctx *gin.Context) {
 			Utime:  art.Utime.Format(time.DateTime),
 		},
 	})
+}
+
+func (h *ArticleHandler) Like(ctx *gin.Context) {
+	var req LikeReq
+	if err := ctx.Bind(&req); err != nil {
+		return
+	}
+	claims := ctx.MustGet("claims").(*UserClaims)
+	var err error
+	if req.Like {
+		//h.biz, req.Id, claims.Uid
+		err = h.intrSvc.Like(ctx.Request.Context(), h.biz, req.Id, claims.Uid)
+	} else {
+		err = h.intrSvc.CancelLike(ctx.Request.Context(), h.biz, req.Id, claims.Uid)
+	}
+	if err != nil {
+		zap.L().Error("点赞错误", zap.Error(err))
+		ctx.JSON(http.StatusOK, Result{
+			Msg: "系统错误",
+		})
+		return
+	}
+	ctx.JSON(http.StatusOK, Result{
+		Msg: "OK",
+	})
+
 }
