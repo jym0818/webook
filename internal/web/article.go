@@ -5,6 +5,7 @@ import (
 	"github.com/jym0818/webook/internal/domain"
 	"github.com/jym0818/webook/internal/service"
 	"go.uber.org/zap"
+	"golang.org/x/sync/errgroup"
 	"net/http"
 	"strconv"
 	"time"
@@ -208,15 +209,26 @@ func (h *ArticleHandler) PubDetail(ctx *gin.Context) {
 
 		return
 	}
-	//claims := ctx.MustGet("claims").(*UserClaims)
 
-	art, err := h.svc.GetPublishedById(ctx.Request.Context(), id)
+	var eg errgroup.Group
+	var art domain.Article
+	eg.Go(func() error {
+		art, err = h.svc.GetPublishedById(ctx.Request.Context(), id)
+		return err
+	})
+	var intr domain.Interactive
+	eg.Go(func() error {
+		uc := ctx.MustGet("claims").(*UserClaims)
+		intr, err = h.intrSvc.Get(ctx, h.biz, id, uc.Uid)
+		return err
+	})
+	err = eg.Wait()
 	if err != nil {
+		// 代表查询出错了
 		ctx.JSON(http.StatusOK, Result{
 			Code: 5,
 			Msg:  "系统错误",
 		})
-		zap.L().Error("获得文章信息失败", zap.Error(err))
 		return
 	}
 
@@ -236,9 +248,14 @@ func (h *ArticleHandler) PubDetail(ctx *gin.Context) {
 			Status:  art.Status.ToUint8(),
 			Content: art.Content,
 			// 要把作者信息带出去
-			Author: art.Author.Name,
-			Ctime:  art.Ctime.Format(time.DateTime),
-			Utime:  art.Utime.Format(time.DateTime),
+			Author:     art.Author.Name,
+			Ctime:      art.Ctime.Format(time.DateTime),
+			Utime:      art.Utime.Format(time.DateTime),
+			Liked:      intr.Liked,
+			Collected:  intr.Collected,
+			LikeCnt:    intr.LikeCnt,
+			ReadCnt:    intr.ReadCnt,
+			CollectCnt: intr.CollectCnt,
 		},
 	})
 }
