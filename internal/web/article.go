@@ -206,7 +206,7 @@ func (h *ArticleHandler) PubDetail(ctx *gin.Context) {
 
 		return
 	}
-	claims := ctx.MustGet("claims").(*UserClaims)
+	//claims := ctx.MustGet("claims").(*UserClaims)
 
 	art, err := h.svc.GetPublishedById(ctx.Request.Context(), id)
 	if err != nil {
