@@ -3,7 +3,9 @@ package service
 import (
 	"context"
 	"github.com/jym0818/webook/internal/domain"
+	"github.com/jym0818/webook/internal/evetns/article"
 	"github.com/jym0818/webook/internal/repository"
+	"go.uber.org/zap"
 )
 
 type ArticleService interface {
@@ -12,20 +14,30 @@ type ArticleService interface {
 	Withdraw(ctx context.Context, article domain.Article) error
 	List(ctx context.Context, uid int64, offset int, limit int) ([]domain.Article, error)
 	GetById(ctx context.Context, id int64) (domain.Article, error)
-	GetPublishedById(ctx context.Context, id int64) (domain.Article, error)
+	GetPublishedById(ctx context.Context, id int64, uid int64) (domain.Article, error)
 }
 
 type articleService struct {
-	repo repository.ArticleRepository
+	repo     repository.ArticleRepository
+	producer article.Producer
 }
 
 func (svc *articleService) GetById(ctx context.Context, id int64) (domain.Article, error) {
 	return svc.repo.GetByID(ctx, id)
 }
 
-func (svc *articleService) GetPublishedById(ctx context.Context, id int64) (domain.Article, error) {
+func (svc *articleService) GetPublishedById(ctx context.Context, id int64, uid int64) (domain.Article, error) {
 	// 另一个选项，在这里组装 Author，调用 UserService
-	return svc.repo.GetPublishedById(ctx, id)
+	art, err := svc.repo.GetPublishedById(ctx, id)
+	if err == nil {
+		go func() {
+			er := svc.producer.ProduceReadEvent(ctx, article.ReadEvent{Uid: uid, Aid: art.Id})
+			if er != nil {
+				zap.L().Error("消息计数增加失败", zap.Error(er))
+			}
+		}()
+	}
+	return art, err
 }
 
 func (svc *articleService) Publish(ctx context.Context, art domain.Article) (int64, error) {
@@ -50,6 +62,6 @@ func (svc *articleService) Save(ctx context.Context, art domain.Article) (int64,
 	return svc.repo.Create(ctx, art)
 }
 
-func NewarticleService(repo repository.ArticleRepository) ArticleService {
-	return &articleService{repo: repo}
+func NewarticleService(repo repository.ArticleRepository, producer article.Producer) ArticleService {
+	return &articleService{repo: repo, producer: producer}
 }

@@ -209,11 +209,11 @@ func (h *ArticleHandler) PubDetail(ctx *gin.Context) {
 
 		return
 	}
-
+	claims := ctx.MustGet("claims").(*UserClaims)
 	var eg errgroup.Group
 	var art domain.Article
 	eg.Go(func() error {
-		art, err = h.svc.GetPublishedById(ctx.Request.Context(), id)
+		art, err = h.svc.GetPublishedById(ctx.Request.Context(), id, claims.Uid)
 		return err
 	})
 	var intr domain.Interactive
@@ -233,13 +233,13 @@ func (h *ArticleHandler) PubDetail(ctx *gin.Context) {
 	}
 
 	//增加阅读计数
-	go func() {
-		er := h.intrSvc.IncrReadCnt(ctx, h.biz, art.Id)
-		if er != nil {
-			//记录日志
-			zap.L().Error("记录日志失败 ", zap.Int64("文章Id", art.Id), zap.Error(er))
-		}
-	}()
+	//go func() {
+	//	er := h.intrSvc.IncrReadCnt(ctx, h.biz, art.Id)
+	//	if er != nil {
+	//		//记录日志
+	//		zap.L().Error("记录日志失败 ", zap.Int64("文章Id", art.Id), zap.Error(er))
+	//	}
+	//}()
 
 	ctx.JSON(http.StatusOK, Result{
 		Data: ArticleVO{
