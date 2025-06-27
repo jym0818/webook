@@ -7,8 +7,8 @@
 package main
 
 import (
-	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
+	"github.com/jym0818/webook/internal/events/article"
 	"github.com/jym0818/webook/internal/repository"
 	"github.com/jym0818/webook/internal/repository/cache"
 	"github.com/jym0818/webook/internal/repository/dao"
@@ -19,7 +19,7 @@ import (
 
 // Injectors from wire.go:
 
-func InitServer() *gin.Engine {
+func InitServer() *App {
 	db := ioc.InitDB()
 	userDAO := dao.NewuserDAO(db)
 	cmdable := ioc.InitRedis()
@@ -38,14 +38,23 @@ func InitServer() *gin.Engine {
 	articleDAO := dao.NewarticleDAO(db)
 	articleCache := cache.NewarticleCache(cmdable)
 	articleRepository := repository.NewarticleRepository(articleDAO, articleCache, userRepository)
-	articleService := service.NewarticleService(articleRepository)
+	client := ioc.InitKafka()
+	syncProducer := ioc.InitKafkaProducer(client)
+	producer := article.NewKafkaProducer(syncProducer)
+	articleService := service.NewarticleService(articleRepository, producer)
 	interactiveCache := cache.NewinteractiveCache(cmdable)
 	interactiveDAO := dao.NewinteractiveDAO(db)
 	interactiveRepository := repository.NewinteractiveRepository(interactiveCache, interactiveDAO)
 	interactiveService := service.NewinteractiveService(interactiveRepository)
 	articleHandler := web.NewArticleHandler(articleService, interactiveService)
 	engine := ioc.InitWeb(userHandler, v, oAuth2WechatHandler, articleHandler)
-	return engine
+	consumer := article.NewReadEventArticleConsumer(interactiveRepository, client)
+	v2 := ioc.NewConsumers(consumer)
+	app := &App{
+		web:       engine,
+		consumers: v2,
+	}
+	return app
 }
 
 // wire.go:

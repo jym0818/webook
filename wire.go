@@ -3,8 +3,8 @@
 package main
 
 import (
-	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
+	"github.com/jym0818/webook/internal/events/article"
 	"github.com/jym0818/webook/internal/repository"
 	"github.com/jym0818/webook/internal/repository/cache"
 	"github.com/jym0818/webook/internal/repository/dao"
@@ -40,7 +40,7 @@ var InteractiveService = wire.NewSet(
 	service.NewinteractiveService,
 )
 
-func InitServer() *gin.Engine {
+func InitServer() *App {
 	wire.Build(
 		ioc.InitDB,
 		ioc.InitRedis,
@@ -60,6 +60,14 @@ func InitServer() *gin.Engine {
 		web.NewArticleHandler,
 
 		InteractiveService,
+
+		ioc.InitKafka,
+		ioc.InitKafkaProducer,
+		ioc.NewConsumers,
+		article.NewReadEventArticleConsumer,
+		article.NewKafkaProducer,
+
+		wire.Struct(new(App), "*"),
 	)
-	return new(gin.Engine)
+	return new(App)
 }

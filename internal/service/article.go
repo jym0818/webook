@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 	"github.com/jym0818/webook/internal/domain"
-	"github.com/jym0818/webook/internal/evetns/article"
+	"github.com/jym0818/webook/internal/events/article"
 	"github.com/jym0818/webook/internal/repository"
 	"go.uber.org/zap"
 )
