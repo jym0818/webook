@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jym0818/webook/internal/web"
 	"github.com/jym0818/webook/internal/web/middleware"
+	"github.com/jym0818/webook/pkg/ginx/metric"
 	"github.com/redis/go-redis/v9"
 	"strings"
 	"time"
@@ -22,6 +23,13 @@ func InitWeb(userHandler *web.UserHandler, mdls []gin.HandlerFunc, wechat *web.O
 func InitMiddlware(cmd redis.Cmdable) []gin.HandlerFunc {
 	return []gin.HandlerFunc{
 		corsHdl(),
+		(&metric.MiddlewareBuilder{
+			Namespace:  "jym",
+			Subsystem:  "webook",
+			Name:       "gin_http",
+			Help:       "统计gin的Http",
+			InstanceID: "my-instance-1",
+		}).Build(),
 		////限流
 		//ratelimit.NewBuilder(cmd, time.Second, 100).Build(),
 		middleware.NewLoginMiddlewareBuilder(cmd).
