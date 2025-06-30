@@ -11,7 +11,7 @@ import (
 func main() {
 	InitViper()
 	InitLogger()
-	//initPrometheus()
+	initPrometheus()
 	app := InitServer()
 	for _, consumer := range app.consumers {
 		err := consumer.Start()
