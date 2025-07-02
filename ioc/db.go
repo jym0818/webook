@@ -2,10 +2,12 @@ package ioc
 
 import (
 	"github.com/jym0818/webook/internal/repository/dao"
+	prometheus2 "github.com/prometheus/client_golang/prometheus"
 	"github.com/spf13/viper"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/plugin/prometheus"
+	"time"
 )
 
 func InitDB() *gorm.DB {
@@ -32,6 +34,41 @@ func InitDB() *gorm.DB {
 	if err != nil {
 		panic(err)
 	}
+	//统计查询时间
+	summary := prometheus2.NewSummaryVec(prometheus2.SummaryOpts{
+		Namespace:  "jym",
+		Subsystem:  "webook",
+		Name:       "gorm_query_time",
+		Help:       "统计sql查询时间",
+		Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001, 0.999: 0.0001},
+	}, []string{"type", "table"})
+
+	err = db.Callback().Create().Before("*").Register("prometheus_create_before", func(db *gorm.DB) {
+		start := time.Now()
+		db.Set("start_time", start)
+	})
+	if err != nil {
+		panic(err)
+	}
+	err = db.Callback().Create().After("*").Register("prometheus_create_after", func(db *gorm.DB) {
+		val, _ := db.Get("start_time")
+		if !ok {
+			return
+		}
+		start, ok := val.(time.Time)
+		if !ok {
+			return
+		}
+		table := db.Statement.Table
+		if table == "" {
+			table = "unknown"
+		}
+		summary.WithLabelValues("create", table).Observe(float64(time.Since(start).Milliseconds()))
+	})
+	if err != nil {
+		panic(err)
+	}
+
 	err = dao.InitDB(db)
 	if err != nil {
 		panic(err)
