@@ -5,6 +5,7 @@ import (
 	"github.com/spf13/viper"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"gorm.io/plugin/prometheus"
 )
 
 func InitDB() *gorm.DB {
@@ -18,6 +19,16 @@ func InitDB() *gorm.DB {
 		panic(err)
 	}
 	db, err := gorm.Open(mysql.Open(cfg.DSN), &gorm.Config{})
+	if err != nil {
+		panic(err)
+	}
+	err = db.Use(prometheus.New(prometheus.Config{
+		DBName:          "webook",
+		RefreshInterval: 15,
+		MetricsCollector: []prometheus.MetricsCollector{&prometheus.MySQL{
+			VariableNames: []string{"Threads_running"},
+		}},
+	}))
 	if err != nil {
 		panic(err)
 	}
