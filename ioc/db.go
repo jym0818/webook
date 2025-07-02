@@ -42,7 +42,7 @@ func InitDB() *gorm.DB {
 		Help:       "统计sql查询时间",
 		Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001, 0.999: 0.0001},
 	}, []string{"type", "table"})
-
+	prometheus2.MustRegister(summary)
 	err = db.Callback().Create().Before("*").Register("prometheus_create_before", func(db *gorm.DB) {
 		start := time.Now()
 		db.Set("start_time", start)
