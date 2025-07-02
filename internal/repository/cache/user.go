@@ -33,6 +33,7 @@ func (cache *userCache) key(uid int64) string {
 }
 
 func (cache *userCache) Get(ctx context.Context, uid int64) (domain.User, error) {
+	ctx = context.WithValue(ctx, "biz", "user")
 	user, err := cache.cmd.Get(ctx, cache.key(uid)).Bytes()
 	if err != nil {
 		return domain.User{}, err
