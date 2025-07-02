@@ -52,9 +52,7 @@ func InitDB() *gorm.DB {
 	}
 	err = db.Callback().Create().After("*").Register("prometheus_create_after", func(db *gorm.DB) {
 		val, _ := db.Get("start_time")
-		if !ok {
-			return
-		}
+
 		start, ok := val.(time.Time)
 		if !ok {
 			return
@@ -64,6 +62,30 @@ func InitDB() *gorm.DB {
 			table = "unknown"
 		}
 		summary.WithLabelValues("create", table).Observe(float64(time.Since(start).Milliseconds()))
+	})
+	if err != nil {
+		panic(err)
+	}
+	//查询
+	err = db.Callback().Query().Before("*").Register("prometheus_query_before", func(db *gorm.DB) {
+		start := time.Now()
+		db.Set("start_time", start)
+	})
+	if err != nil {
+		panic(err)
+	}
+	err = db.Callback().Query().After("*").Register("prometheus_query_after", func(db *gorm.DB) {
+		val, _ := db.Get("start_time")
+
+		start, ok := val.(time.Time)
+		if !ok {
+			return
+		}
+		table := db.Statement.Table
+		if table == "" {
+			table = "unknown"
+		}
+		summary.WithLabelValues("query", table).Observe(float64(time.Since(start).Milliseconds()))
 	})
 	if err != nil {
 		panic(err)
