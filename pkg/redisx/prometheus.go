@@ -15,6 +15,7 @@ type PrometheusHook struct {
 
 func NewPrometheusHook(opt prometheus.SummaryOpts) *PrometheusHook {
 	vector := prometheus.NewSummaryVec(opt, []string{"cmd", "biz", "key_exists"})
+	prometheus.Register(vector)
 	return &PrometheusHook{
 		vector: vector,
 	}
