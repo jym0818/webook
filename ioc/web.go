@@ -7,6 +7,7 @@ import (
 	"github.com/jym0818/webook/internal/web/middleware"
 	"github.com/jym0818/webook/pkg/ginx/metric"
 	"github.com/redis/go-redis/v9"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"strings"
 	"time"
 )
@@ -23,6 +24,7 @@ func InitWeb(userHandler *web.UserHandler, mdls []gin.HandlerFunc, wechat *web.O
 func InitMiddlware(cmd redis.Cmdable) []gin.HandlerFunc {
 	return []gin.HandlerFunc{
 		corsHdl(),
+		otelgin.Middleware("webook"),
 		(&metric.MiddlewareBuilder{
 			Namespace:  "jym",
 			Subsystem:  "webook",
