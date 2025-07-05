@@ -27,7 +27,7 @@ require (
 	golang.org/x/sync v0.15.0
 	gorm.io/driver/mysql v1.6.0
 	gorm.io/gorm v1.30.0
-	gorm.io/plugin/opentelemetry v0.1.15
+	gorm.io/plugin/opentelemetry v0.1.4
 	gorm.io/plugin/prometheus v0.1.0
 )
 
