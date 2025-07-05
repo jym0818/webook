@@ -35,7 +35,7 @@ func InitDB() *gorm.DB {
 	if err != nil {
 		panic(err)
 	}
-	err = db.Use(tracing.NewPlugin(tracing.WithDBName("webook"),
+	err = db.Use(tracing.NewPlugin(tracing.WithDBSystem("webook"),
 		//不要记录metric  我们使用了prometheus
 		tracing.WithoutMetrics(),
 		//不要记录查询参数，安全需求线上不要记录
