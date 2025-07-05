@@ -4,6 +4,7 @@ import (
 	"github.com/jym0818/webook/internal/repository/dao"
 	prometheus2 "github.com/prometheus/client_golang/prometheus"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/plugin/opentelemetry/tracing"
@@ -40,6 +41,10 @@ func InitDB() *gorm.DB {
 		tracing.WithoutMetrics(),
 		//不要记录查询参数，安全需求线上不要记录
 		tracing.WithoutQueryVariables(),
+		tracing.WithQueryFormatter(func(query string) string {
+			zap.L().Debug("Query", zap.String("query", query))
+			return query
+		}),
 	))
 	if err != nil {
 		panic(err)
