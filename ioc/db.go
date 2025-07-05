@@ -4,7 +4,8 @@ import (
 	"github.com/jym0818/webook/internal/repository/dao"
 	prometheus2 "github.com/prometheus/client_golang/prometheus"
 	"github.com/spf13/viper"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/plugin/opentelemetry/tracing"
@@ -36,15 +37,14 @@ func InitDB() *gorm.DB {
 	if err != nil {
 		panic(err)
 	}
-	err = db.Use(tracing.NewPlugin(tracing.WithDBSystem("webook"),
-		//不要记录metric  我们使用了prometheus
+	err = db.Use(tracing.NewPlugin(
+		tracing.WithTracerProvider(otel.GetTracerProvider()),
+		tracing.WithAttributes(
+			attribute.String("db.system", "mysql"),
+			attribute.String("db.name", "webook"), // 设置数据库名
+		),
 		tracing.WithoutMetrics(),
-		//不要记录查询参数，安全需求线上不要记录
 		tracing.WithoutQueryVariables(),
-		tracing.WithQueryFormatter(func(query string) string {
-			zap.L().Debug("Query", zap.String("query", query))
-			return query
-		}),
 	))
 	if err != nil {
 		panic(err)
