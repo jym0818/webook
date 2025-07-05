@@ -41,6 +41,9 @@ func InitDB() *gorm.DB {
 		//不要记录查询参数，安全需求线上不要记录
 		tracing.WithoutQueryVariables(),
 	))
+	if err != nil {
+		panic(err)
+	}
 	//统计查询时间
 	summary := prometheus2.NewSummaryVec(prometheus2.SummaryOpts{
 		Namespace:  "jym",
