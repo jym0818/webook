@@ -9,6 +9,7 @@ import (
 	"github.com/jym0818/webook/internal/errs"
 	"github.com/jym0818/webook/internal/service"
 	"github.com/redis/go-redis/v9"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"net/http"
 	"time"
@@ -121,6 +122,8 @@ func (h *UserHandler) Signup(c *gin.Context) {
 	err = h.svc.Signup(c.Request.Context(), domain.User{Email: req.Email, Password: req.Password})
 	//错误判断
 	if err == service.ErrUserDuplicateEmail {
+		span := trace.SpanFromContext(c.Request.Context())
+		span.AddEvent("邮件冲突")
 		c.JSON(http.StatusOK, Result{Code: 400, Msg: "邮箱冲突"})
 		return
 	}
