@@ -67,6 +67,12 @@ func InitServer() *App {
 		article.NewReadEventArticleConsumer,
 		article.NewKafkaProducer,
 
+		service.NewBatchRankingService,
+		ioc.InitRankingJob,
+		ioc.InitCronJob,
+		repository.NewCachedRankingRepository,
+		cache.NewRankingRedisCache,
+
 		wire.Struct(new(App), "*"),
 	)
 	return new(App)

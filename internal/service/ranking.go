@@ -12,7 +12,7 @@ import (
 
 type RankingService interface {
 	//不会返回[]domain.Article  因为会直接放在redis里面
-	TopN(ctx context.Context)
+	TopN(ctx context.Context) error
 }
 type BatchRankingService struct {
 	artSvc    ArticleService
@@ -23,7 +23,7 @@ type BatchRankingService struct {
 	repo      repository.RankingRepository
 }
 
-func NewBatchRankingService(artSvc ArticleService, intrSvc InteractiveService) *BatchRankingService {
+func NewBatchRankingService(artSvc ArticleService, intrSvc InteractiveService, repo repository.RankingRepository) RankingService {
 	return &BatchRankingService{
 		artSvc:    artSvc,
 		intrSvc:   intrSvc,
@@ -34,6 +34,7 @@ func NewBatchRankingService(artSvc ArticleService, intrSvc InteractiveService) *
 			sec := time.Since(t).Seconds()
 			return float64(likeCnt-1) / math.Pow(sec+2, 1.5)
 		},
+		repo: repo,
 	}
 }
 func (svc *BatchRankingService) TopN(ctx context.Context) error {

@@ -50,9 +50,15 @@ func InitServer() *App {
 	engine := ioc.InitWeb(userHandler, v, oAuth2WechatHandler, articleHandler)
 	consumer := article.NewReadEventArticleConsumer(interactiveRepository, client)
 	v2 := ioc.NewConsumers(consumer)
+	rankingCache := cache.NewRankingRedisCache(cmdable)
+	rankingRepository := repository.NewCachedRankingRepository(rankingCache)
+	rankingService := service.NewBatchRankingService(articleService, interactiveService, rankingRepository)
+	job := ioc.InitRankingJob(rankingService)
+	cron := ioc.InitCronJob(job)
 	app := &App{
 		web:       engine,
 		consumers: v2,
+		cron:      cron,
 	}
 	return app
 }

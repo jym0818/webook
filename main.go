@@ -28,10 +28,22 @@ func main() {
 			panic(err)
 		}
 	}
+
+	app.cron.Start()
+
 	app.web.Run(":8080")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	fn(ctx)
+
+	ctx = app.cron.Stop()
+	// 想办法 close ？？
+	// 这边可以考虑超时强制退出，防止有些任务，执行特别长的时间
+	tm := time.NewTimer(time.Minute * 10)
+	select {
+	case <-tm.C:
+	case <-ctx.Done():
+	}
 }
 
 func InitViper() {
