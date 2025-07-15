@@ -6,6 +6,7 @@ import (
 	"github.com/jym0818/webook/internal/events/article"
 	"github.com/jym0818/webook/internal/repository"
 	"go.uber.org/zap"
+	"time"
 )
 
 type ArticleService interface {
@@ -15,11 +16,19 @@ type ArticleService interface {
 	List(ctx context.Context, uid int64, offset int, limit int) ([]domain.Article, error)
 	GetById(ctx context.Context, id int64) (domain.Article, error)
 	GetPublishedById(ctx context.Context, id int64, uid int64) (domain.Article, error)
+
+	// ListPub 只会取 start 七天内的数据
+	ListPub(ctx context.Context, start time.Time, offset, limit int) ([]domain.Article, error)
 }
 
 type articleService struct {
 	repo     repository.ArticleRepository
 	producer article.Producer
+}
+
+func (svc *articleService) ListPub(ctx context.Context, start time.Time, offset, limit int) ([]domain.Article, error) {
+	return svc.repo.ListPub(ctx, start, offset, limit)
+
 }
 
 func (svc *articleService) GetById(ctx context.Context, id int64) (domain.Article, error) {
