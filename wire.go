@@ -72,6 +72,7 @@ func InitServer() *App {
 		ioc.InitCronJob,
 		repository.NewCachedRankingRepository,
 		cache.NewRankingRedisCache,
+		cache.NewRankingLocalCache,
 
 		wire.Struct(new(App), "*"),
 	)
