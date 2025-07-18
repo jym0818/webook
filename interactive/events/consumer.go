@@ -1,10 +1,9 @@
-package article
+package events
 
 import (
 	"context"
 	"github.com/IBM/sarama"
-	"github.com/jym0818/webook/internal/events"
-	"github.com/jym0818/webook/internal/repository"
+	"github.com/jym0818/webook/interactive/repository"
 	"github.com/jym0818/webook/pkg/saramax"
 	"go.uber.org/zap"
 	"time"
@@ -36,6 +35,6 @@ func (r *ReadEventArticleConsumer) Consume(msg *sarama.ConsumerMessage, evt Read
 	return r.repo.IncrReadCnt(ctx, "article", evt.Aid)
 }
 
-func NewReadEventArticleConsumer(repo repository.InteractiveRepository, client sarama.Client) events.Consumer {
+func NewReadEventArticleConsumer(repo repository.InteractiveRepository, client sarama.Client) saramax.Consumer {
 	return &ReadEventArticleConsumer{repo: repo, client: client}
 }

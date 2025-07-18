@@ -6,6 +6,7 @@ require (
 	github.com/IBM/sarama v1.45.2
 	github.com/dlclark/regexp2 v1.11.5
 	github.com/ecodeclub/ekit v0.0.10
+	github.com/fsnotify/fsnotify v1.8.0
 	github.com/gin-contrib/cors v1.7.5
 	github.com/gin-gonic/gin v1.10.1
 	github.com/go-sql-driver/mysql v1.9.2
@@ -22,11 +23,13 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin v0.45.0
 	go.opentelemetry.io/otel v1.35.0
 	go.opentelemetry.io/otel/exporters/zipkin v1.19.0
-	go.opentelemetry.io/otel/sdk v1.32.0
+	go.opentelemetry.io/otel/sdk v1.35.0
 	go.opentelemetry.io/otel/trace v1.35.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/crypto v0.39.0
 	golang.org/x/sync v0.15.0
+	google.golang.org/grpc v1.73.0
+	google.golang.org/protobuf v1.36.6
 	gorm.io/driver/mysql v1.6.0
 	gorm.io/gorm v1.30.0
 	gorm.io/plugin/opentelemetry v0.1.15
@@ -48,7 +51,6 @@ require (
 	github.com/eapache/go-resiliency v1.7.0 // indirect
 	github.com/eapache/go-xerial-snappy v0.0.0-20230731223053-c322873962e3 // indirect
 	github.com/eapache/queue v1.1.0 // indirect
-	github.com/fsnotify/fsnotify v1.8.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.9 // indirect
 	github.com/gin-contrib/sse v1.1.0 // indirect
 	github.com/go-faster/city v1.0.1 // indirect
@@ -111,7 +113,7 @@ require (
 	golang.org/x/net v0.41.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/text v0.26.0 // indirect
-	google.golang.org/protobuf v1.36.6 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250324211829-b45e905df463 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gorm.io/driver/clickhouse v0.7.0 // indirect
 	gorm.io/driver/postgres v1.5.11 // indirect

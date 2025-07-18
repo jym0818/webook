@@ -2,6 +2,8 @@ package web
 
 import (
 	"github.com/gin-gonic/gin"
+	domain2 "github.com/jym0818/webook/interactive/domain"
+	service2 "github.com/jym0818/webook/interactive/service"
 	"github.com/jym0818/webook/internal/domain"
 	"github.com/jym0818/webook/internal/service"
 	"go.uber.org/zap"
@@ -13,11 +15,11 @@ import (
 
 type ArticleHandler struct {
 	svc     service.ArticleService
-	intrSvc service.InteractiveService
+	intrSvc service2.InteractiveService
 	biz     string
 }
 
-func NewArticleHandler(svc service.ArticleService, intrSvc service.InteractiveService) *ArticleHandler {
+func NewArticleHandler(svc service.ArticleService, intrSvc service2.InteractiveService) *ArticleHandler {
 	return &ArticleHandler{
 		svc:     svc,
 		intrSvc: intrSvc,
@@ -216,7 +218,7 @@ func (h *ArticleHandler) PubDetail(ctx *gin.Context) {
 		art, err = h.svc.GetPublishedById(ctx.Request.Context(), id, claims.Uid)
 		return err
 	})
-	var intr domain.Interactive
+	var intr domain2.Interactive
 	eg.Go(func() error {
 		uc := ctx.MustGet("claims").(*UserClaims)
 		intr, err = h.intrSvc.Get(ctx, h.biz, id, uc.Uid)

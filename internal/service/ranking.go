@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/ecodeclub/ekit/queue"
 	"github.com/ecodeclub/ekit/slice"
+	service2 "github.com/jym0818/webook/interactive/service"
 	"github.com/jym0818/webook/internal/domain"
 	"github.com/jym0818/webook/internal/repository"
 	"math"
@@ -16,14 +17,14 @@ type RankingService interface {
 }
 type BatchRankingService struct {
 	artSvc    ArticleService
-	intrSvc   InteractiveService
+	intrSvc   service2.InteractiveService
 	batchSize int
 	n         int
 	scoreFunc func(t time.Time, likeCnt int64) float64
 	repo      repository.RankingRepository
 }
 
-func NewBatchRankingService(artSvc ArticleService, intrSvc InteractiveService, repo repository.RankingRepository) RankingService {
+func NewBatchRankingService(artSvc ArticleService, intrSvc service2.InteractiveService, repo repository.RankingRepository) RankingService {
 	return &BatchRankingService{
 		artSvc:    artSvc,
 		intrSvc:   intrSvc,

@@ -4,6 +4,11 @@ package main
 
 import (
 	"github.com/google/wire"
+	"github.com/jym0818/webook/interactive/events"
+	repository2 "github.com/jym0818/webook/interactive/repository"
+	cache2 "github.com/jym0818/webook/interactive/repository/cache"
+	dao2 "github.com/jym0818/webook/interactive/repository/dao"
+	service2 "github.com/jym0818/webook/interactive/service"
 	"github.com/jym0818/webook/internal/events/article"
 	"github.com/jym0818/webook/internal/repository"
 	"github.com/jym0818/webook/internal/repository/cache"
@@ -34,10 +39,10 @@ var ArticleService = wire.NewSet(
 )
 
 var InteractiveService = wire.NewSet(
-	dao.NewinteractiveDAO,
-	cache.NewinteractiveCache,
-	repository.NewinteractiveRepository,
-	service.NewinteractiveService,
+	dao2.NewinteractiveDAO,
+	cache2.NewinteractiveCache,
+	repository2.NewinteractiveRepository,
+	service2.NewinteractiveService,
 )
 
 func InitServer() *App {
@@ -63,8 +68,7 @@ func InitServer() *App {
 
 		ioc.InitKafka,
 		ioc.InitKafkaProducer,
-		ioc.NewConsumers,
-		article.NewReadEventArticleConsumer,
+		events.NewReadEventArticleConsumer,
 		article.NewKafkaProducer,
 
 		service.NewBatchRankingService,

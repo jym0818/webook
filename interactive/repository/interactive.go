@@ -2,9 +2,9 @@ package repository
 
 import (
 	"context"
-	"github.com/jym0818/webook/internal/domain"
-	"github.com/jym0818/webook/internal/repository/cache"
-	"github.com/jym0818/webook/internal/repository/dao"
+	"github.com/jym0818/webook/interactive/domain"
+	"github.com/jym0818/webook/interactive/repository/cache"
+	"github.com/jym0818/webook/interactive/repository/dao"
 )
 
 type InteractiveRepository interface {

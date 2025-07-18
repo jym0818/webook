@@ -5,6 +5,6 @@ import (
 )
 
 func InitDB(db *gorm.DB) error {
-	err := db.AutoMigrate(&User{}, &Article{}, &PublishedArticle{}, &Interactive{}, &UserLikeBiz{}, &Collection{}, &UserCollectionBiz{})
+	err := db.AutoMigrate(&User{}, &Article{}, &PublishedArticle{})
 	return err
 }

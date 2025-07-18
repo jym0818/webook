@@ -2,6 +2,7 @@ package ioc
 
 import (
 	"github.com/IBM/sarama"
+	"github.com/jym0818/webook/pkg/saramax"
 	"github.com/spf13/viper"
 )
 
@@ -23,10 +24,6 @@ func InitKafka() sarama.Client {
 	return client
 }
 
-func InitKafkaProducer(client sarama.Client) sarama.SyncProducer {
-	producer, err := sarama.NewSyncProducerFromClient(client)
-	if err != nil {
-		panic(err)
-	}
-	return producer
+func NewConsumers(c1 saramax.Consumer) []saramax.Consumer {
+	return []saramax.Consumer{c1}
 }

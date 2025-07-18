@@ -1,0 +1,7 @@
+mysql:
+  dsn: "root:root@tcp(118.25.44.1:13316)/webook"
+redis:
+  addr: "118.25.44.1:6379"
+kafka:
+  addrs:
+    - "118.25.44.1:9094"
