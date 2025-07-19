@@ -18,6 +18,7 @@ type InteractiveDAO interface {
 	Get(ctx context.Context, biz string, bizId int64) (Interactive, error)
 	GetCollectionInfo(ctx context.Context, biz string, bizId, uid int64) (UserCollectionBiz, error)
 	InsertCollectionBiz(ctx context.Context, cb UserCollectionBiz) error
+	GetByIds(ctx context.Context, biz string, ids []int64) ([]Interactive, error)
 }
 
 type interactiveDAO struct {
@@ -28,6 +29,14 @@ func NewinteractiveDAO(db *gorm.DB) InteractiveDAO {
 	return &interactiveDAO{
 		db: db,
 	}
+}
+
+func (dao *interactiveDAO) GetByIds(ctx context.Context, biz string, ids []int64) ([]Interactive, error) {
+	var res []Interactive
+	err := dao.db.WithContext(ctx).
+		Where("biz = ? AND biz_id IN ?", biz, ids).
+		First(&res).Error
+	return res, err
 }
 
 func (dao *interactiveDAO) GetLikeInfo(ctx context.Context, biz string, bizId, uid int64) (UserLikeBiz, error) {

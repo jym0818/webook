@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"github.com/ecodeclub/ekit/slice"
 	"github.com/jym0818/webook/interactive/domain"
 	"github.com/jym0818/webook/interactive/repository/cache"
 	"github.com/jym0818/webook/interactive/repository/dao"
@@ -16,6 +17,7 @@ type InteractiveRepository interface {
 	Get(ctx context.Context, biz string, bizId int64) (domain.Interactive, error)
 	Liked(ctx context.Context, biz string, id int64, uid int64) (bool, error)
 	Collected(ctx context.Context, biz string, id int64, uid int64) (bool, error)
+	GetByIds(ctx context.Context, biz string, ids []int64) ([]domain.Interactive, error)
 }
 type interactiveRepository struct {
 	cache cache.InteractiveCache
@@ -27,6 +29,16 @@ func NewinteractiveRepository(cache cache.InteractiveCache, dao dao.InteractiveD
 		cache: cache,
 		dao:   dao,
 	}
+}
+
+func (repo *interactiveRepository) GetByIds(ctx context.Context, biz string, ids []int64) ([]domain.Interactive, error) {
+	intrs, err := repo.dao.GetByIds(ctx, biz, ids)
+	if err != nil {
+		return nil, err
+	}
+	return slice.Map(intrs, func(idx int, src dao.Interactive) domain.Interactive {
+		return repo.toDomain(src)
+	}), nil
 }
 func (repo *interactiveRepository) Liked(ctx context.Context, biz string, id int64, uid int64) (bool, error) {
 	_, err := repo.dao.GetLikeInfo(ctx, biz, id, uid)
