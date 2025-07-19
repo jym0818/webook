@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/ecodeclub/ekit/queue"
 	"github.com/ecodeclub/ekit/slice"
-	service2 "github.com/jym0818/webook/interactive/service"
+	intrv1 "github.com/jym0818/webook/api/proto/gen/intr/v1"
 	"github.com/jym0818/webook/internal/domain"
 	"github.com/jym0818/webook/internal/repository"
 	"math"
@@ -17,14 +17,14 @@ type RankingService interface {
 }
 type BatchRankingService struct {
 	artSvc    ArticleService
-	intrSvc   service2.InteractiveService
+	intrSvc   intrv1.InteractiveServiceClient
 	batchSize int
 	n         int
 	scoreFunc func(t time.Time, likeCnt int64) float64
 	repo      repository.RankingRepository
 }
 
-func NewBatchRankingService(artSvc ArticleService, intrSvc service2.InteractiveService, repo repository.RankingRepository) RankingService {
+func NewBatchRankingService(artSvc ArticleService, intrSvc intrv1.InteractiveServiceClient, repo repository.RankingRepository) RankingService {
 	return &BatchRankingService{
 		artSvc:    artSvc,
 		intrSvc:   intrSvc,
@@ -72,7 +72,11 @@ func (svc *BatchRankingService) TopN(ctx context.Context) error {
 				return src.Id
 			})
 		// 要去找到对应的点赞数据 是一个map
-		intrs, err := svc.intrSvc.GetByIds(ctx, "article", ids)
+		res, err := svc.intrSvc.GetByIds(ctx, &intrv1.GetByIdsRequest{
+			Ids: ids,
+			Biz: "article",
+		})
+		intrs := res.Intrs
 		if err != nil {
 			return err
 		}

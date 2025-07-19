@@ -2,8 +2,7 @@ package web
 
 import (
 	"github.com/gin-gonic/gin"
-	domain2 "github.com/jym0818/webook/interactive/domain"
-	service2 "github.com/jym0818/webook/interactive/service"
+	intrv1 "github.com/jym0818/webook/api/proto/gen/intr/v1"
 	"github.com/jym0818/webook/internal/domain"
 	"github.com/jym0818/webook/internal/service"
 	"go.uber.org/zap"
@@ -15,11 +14,11 @@ import (
 
 type ArticleHandler struct {
 	svc     service.ArticleService
-	intrSvc service2.InteractiveService
+	intrSvc intrv1.InteractiveServiceClient
 	biz     string
 }
 
-func NewArticleHandler(svc service.ArticleService, intrSvc service2.InteractiveService) *ArticleHandler {
+func NewArticleHandler(svc service.ArticleService, intrSvc intrv1.InteractiveServiceClient) *ArticleHandler {
 	return &ArticleHandler{
 		svc:     svc,
 		intrSvc: intrSvc,
@@ -218,10 +217,14 @@ func (h *ArticleHandler) PubDetail(ctx *gin.Context) {
 		art, err = h.svc.GetPublishedById(ctx.Request.Context(), id, claims.Uid)
 		return err
 	})
-	var intr domain2.Interactive
+	var intr *intrv1.GetResponse
 	eg.Go(func() error {
 		uc := ctx.MustGet("claims").(*UserClaims)
-		intr, err = h.intrSvc.Get(ctx, h.biz, id, uc.Uid)
+		intr, err = h.intrSvc.Get(ctx, &intrv1.GetRequest{
+			Uid:   uc.Uid,
+			Biz:   h.biz,
+			BizId: id,
+		})
 		return err
 	})
 	err = eg.Wait()
@@ -253,11 +256,11 @@ func (h *ArticleHandler) PubDetail(ctx *gin.Context) {
 			Author:     art.Author.Name,
 			Ctime:      art.Ctime.Format(time.DateTime),
 			Utime:      art.Utime.Format(time.DateTime),
-			Liked:      intr.Liked,
-			Collected:  intr.Collected,
-			LikeCnt:    intr.LikeCnt,
-			ReadCnt:    intr.ReadCnt,
-			CollectCnt: intr.CollectCnt,
+			Liked:      intr.GetIntr().GetLiked(),
+			Collected:  intr.GetIntr().GetCollected(),
+			LikeCnt:    intr.GetIntr().GetLikeCnt(),
+			ReadCnt:    intr.GetIntr().GetReadCnt(),
+			CollectCnt: intr.GetIntr().GetCollectCnt(),
 		},
 	})
 }
@@ -271,9 +274,9 @@ func (h *ArticleHandler) Like(ctx *gin.Context) {
 	var err error
 	if req.Like {
 		//h.biz, req.Id, claims.Uid
-		err = h.intrSvc.Like(ctx.Request.Context(), h.biz, req.Id, claims.Uid)
+		_, err = h.intrSvc.Like(ctx.Request.Context(), &intrv1.LikeRequest{BizId: req.Id, Biz: h.biz, Uid: claims.Uid})
 	} else {
-		err = h.intrSvc.CancelLike(ctx.Request.Context(), h.biz, req.Id, claims.Uid)
+		_, err = h.intrSvc.CancelLike(ctx.Request.Context(), &intrv1.CancelLikeRequest{BizId: req.Id, Biz: h.biz, Uid: claims.Uid})
 	}
 	if err != nil {
 		zap.L().Error("点赞错误", zap.Error(err))
