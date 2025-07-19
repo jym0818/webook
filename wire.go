@@ -4,11 +4,6 @@ package main
 
 import (
 	"github.com/google/wire"
-	"github.com/jym0818/webook/interactive/events"
-	repository2 "github.com/jym0818/webook/interactive/repository"
-	cache2 "github.com/jym0818/webook/interactive/repository/cache"
-	dao2 "github.com/jym0818/webook/interactive/repository/dao"
-	service2 "github.com/jym0818/webook/interactive/service"
 	"github.com/jym0818/webook/internal/events/article"
 	"github.com/jym0818/webook/internal/repository"
 	"github.com/jym0818/webook/internal/repository/cache"
@@ -38,13 +33,6 @@ var ArticleService = wire.NewSet(
 	service.NewarticleService,
 )
 
-var InteractiveService = wire.NewSet(
-	dao2.NewinteractiveDAO,
-	cache2.NewinteractiveCache,
-	repository2.NewinteractiveRepository,
-	service2.NewinteractiveService,
-)
-
 func InitServer() *App {
 	wire.Build(
 		ioc.InitDB,
@@ -64,11 +52,8 @@ func InitServer() *App {
 		ArticleService,
 		web.NewArticleHandler,
 
-		InteractiveService,
-
 		ioc.InitKafka,
 		ioc.InitKafkaProducer,
-		events.NewReadEventArticleConsumer,
 		article.NewKafkaProducer,
 
 		service.NewBatchRankingService,
@@ -77,7 +62,7 @@ func InitServer() *App {
 		repository.NewCachedRankingRepository,
 		cache.NewRankingRedisCache,
 		cache.NewRankingLocalCache,
-
+		ioc.InitIntrGRPCClient,
 		wire.Struct(new(App), "*"),
 	)
 	return new(App)

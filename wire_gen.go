@@ -8,11 +8,6 @@ package main
 
 import (
 	"github.com/google/wire"
-	"github.com/jym0818/webook/interactive/events"
-	repository2 "github.com/jym0818/webook/interactive/repository"
-	cache2 "github.com/jym0818/webook/interactive/repository/cache"
-	dao2 "github.com/jym0818/webook/interactive/repository/dao"
-	service2 "github.com/jym0818/webook/interactive/service"
 	"github.com/jym0818/webook/internal/events/article"
 	"github.com/jym0818/webook/internal/repository"
 	"github.com/jym0818/webook/internal/repository/cache"
@@ -47,24 +42,18 @@ func InitServer() *App {
 	syncProducer := ioc.InitKafkaProducer(client)
 	producer := article.NewKafkaProducer(syncProducer)
 	articleService := service.NewarticleService(articleRepository, producer)
-	interactiveCache := cache2.NewinteractiveCache(cmdable)
-	interactiveDAO := dao2.NewinteractiveDAO(db)
-	interactiveRepository := repository2.NewinteractiveRepository(interactiveCache, interactiveDAO)
-	interactiveService := service2.NewinteractiveService(interactiveRepository)
-	articleHandler := web.NewArticleHandler(articleService, interactiveService)
+	interactiveServiceClient := ioc.InitIntrGRPCClient()
+	articleHandler := web.NewArticleHandler(articleService, interactiveServiceClient)
 	engine := ioc.InitWeb(userHandler, v, oAuth2WechatHandler, articleHandler)
-	consumer := events.NewReadEventArticleConsumer(interactiveRepository, client)
-	v2 := ioc.NewConsumers(consumer)
 	rankingCache := cache.NewRankingRedisCache(cmdable)
 	rankingLocalCache := cache.NewRankingLocalCache()
 	rankingRepository := repository.NewCachedRankingRepository(rankingCache, rankingLocalCache)
-	rankingService := service.NewBatchRankingService(articleService, interactiveService, rankingRepository)
+	rankingService := service.NewBatchRankingService(articleService, interactiveServiceClient, rankingRepository)
 	job := ioc.InitRankingJob(rankingService)
 	cron := ioc.InitCronJob(job)
 	app := &App{
-		web:       engine,
-		consumers: v2,
-		cron:      cron,
+		web:  engine,
+		cron: cron,
 	}
 	return app
 }
@@ -76,5 +65,3 @@ var UserService = wire.NewSet(cache.NewuserCache, dao.NewuserDAO, repository.New
 var CodeService = wire.NewSet(cache.NewcodeCache, repository.NewcodeRepository, service.NewcodeService)
 
 var ArticleService = wire.NewSet(dao.NewarticleDAO, cache.NewarticleCache, repository.NewarticleRepository, service.NewarticleService)
-
-var InteractiveService = wire.NewSet(dao2.NewinteractiveDAO, cache2.NewinteractiveCache, repository2.NewinteractiveRepository, service2.NewinteractiveService)

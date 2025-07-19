@@ -6,3 +6,7 @@ redis:
 kafka:
   addrs:
     - "118.25.44.1:9094"
+grpc:
+  client:
+    intr:
+      addr: "localhost:8090"
