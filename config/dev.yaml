@@ -10,3 +10,8 @@ grpc:
   client:
     intr:
       name: "interactive"
+
+etcd:
+  endpoints:
+    - "118.25.44.1:12379"
+
