@@ -50,3 +50,10 @@ services:
     image: openzipkin/zipkin-slim:2.24
     ports:
       - '9411:9411'
+  etcd:
+    image: 'bitnami/etcd:3.5.9'
+    environment:
+      - ALLOW_NONE_AUTHENTICATION=yes
+    ports:
+      #      所以你要用 12379 端口来连接 etcd
+      - 12379:2379
