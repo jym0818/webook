@@ -9,4 +9,4 @@ kafka:
 grpc:
   client:
     intr:
-      addr: "localhost:8090"
+      name: "interactive"

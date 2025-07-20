@@ -17,6 +17,8 @@ func main() {
 	}
 	err := app.server.Serve()
 	log.Println(err)
+	_ = app.server.Close()
+
 }
 func initViperV1() {
 	cfgFile := pflag.String("config", "./config/config.yaml", "指定配置文件路径")

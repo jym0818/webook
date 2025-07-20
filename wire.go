@@ -63,6 +63,7 @@ func InitServer() *App {
 		cache.NewRankingRedisCache,
 		cache.NewRankingLocalCache,
 		ioc.InitIntrGRPCClient,
+		ioc.InitEtcd,
 		wire.Struct(new(App), "*"),
 	)
 	return new(App)

@@ -7,4 +7,6 @@ kafka:
     - "118.25.44.1:9094"
 grpc:
   server:
-    addr: ":8090"
+    port: 8090
+    etcdAddrs:
+      - "118.25.44.1:12379"
