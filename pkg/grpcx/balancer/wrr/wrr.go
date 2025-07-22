@@ -1,6 +1,7 @@
 package wrr
 
 import (
+	"fmt"
 	"google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/balancer/base"
 	"sync"
@@ -32,6 +33,8 @@ func (p *PickerBuilder) Build(info base.PickerBuildInfo) balancer.Picker {
 		cc := &conn{
 			cc: sc,
 		}
+		fmt.Println(sci.Address.Attributes)
+		fmt.Println(sci.Address.Metadata)
 		md, ok := sci.Address.Metadata.(map[string]any)
 		if ok {
 			weightVal := md["weight"]
